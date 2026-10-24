@@ -104,8 +104,6 @@ struct TypeValue
     public string Data { get; set; }
 }
 
-struct
-
 class Program
 {
     static async Task Main(string[] args)
@@ -167,7 +165,12 @@ class Program
                                     new FeatureValue
                                     {
                                         Api = featureNode.Attribute("api")!.Value,
-                                        Version = new SpecVersion { Major = int.Parse(versionNumberMatch.Groups[1].Value), Minor = int.Parse(versionNumberMatch.Groups[2].Value) },
+                                        Version =
+                                        new SpecVersion
+                                        {
+                                            Major = int.Parse(versionNumberMatch.Groups[1].Value),
+                                            Minor = int.Parse(versionNumberMatch.Groups[2].Value)
+                                        },
                                         Enums = new List<string>(from requireNode in requireNodes
                                                                  from enumNode in requireNode.Elements("enum")
                                                                  select enumNode.Attribute("name")!.Value),
