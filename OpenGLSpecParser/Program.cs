@@ -394,6 +394,7 @@ class Program
 #error CONST TO IN???
 #error POINTER TYPES TO IN/OUT/REF QUALS
 #error VOID* TO IntPtr???
+#error MAYBE FOR CALLBACKS USE nint for pointers???
 
             /*RequiredSpec spec = new RequiredSpec
             {
