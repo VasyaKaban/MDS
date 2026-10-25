@@ -395,6 +395,7 @@ class Program
 #error POINTER TYPES TO IN/OUT/REF QUALS
 #error VOID* TO IntPtr???
 #error MAYBE FOR CALLBACKS USE nint for pointers???
+#error CHARS AS MARCHALLING FRO/TO STRING???
 
             /*RequiredSpec spec = new RequiredSpec
             {
