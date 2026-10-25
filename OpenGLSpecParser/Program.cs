@@ -277,7 +277,8 @@ class Program
                                );
 
             var functionPointerRegex = new Regex(@"\(\s*\*\s*\)");
-            var functionPointerSplitRegex = new Regex(@"\w+\s*\*?");
+            var functionPointerSplitRegex = new Regex(@"(\w+ ?\w+\s*\*|\w+ )(\w+)");
+            var functionPointerReturnTypeRegex = new Regex(@"(\w+)\s*\(\s*\*\s*\)");
 
             var types = new Dictionary<TypeKey, TypeValue>();
             foreach (var (key, value) in typeElements)
@@ -302,16 +303,17 @@ class Program
                     var functionPointerMatch = functionPointerRegex.Match(clearType);
                     if (functionPointerMatch.Success)
                     {
-                        var functionPointerSplitMacthes = functionPointerSplitRegex.Matches(clearType).Where((m) => !m.Value.Contains("const")).ToList();
+                        var matches = functionPointerSplitRegex.Matches(clearType);
+                        var returnType = functionPointerReturnTypeRegex.Match(clearType).Groups[1].Value;
 
                         clearType = "delegate* unmanaged<";
 
-                        for (int i = 1; i < functionPointerSplitMacthes.Count; i += 2)
+                        foreach (Match match in matches)
                         {
-                            clearType += String.Format($"{functionPointerSplitMacthes[i].Value} /*{functionPointerSplitMacthes[i + 1].Value}*/, ");
+                            clearType += String.Format($"{match.Groups[1].Value} /*{match.Groups[2].Value}*/, ");
                         }
 
-                        clearType += String.Format($"{functionPointerSplitMacthes[0].Value}>");//return type
+                        clearType += String.Format($"{returnType}>");//return type
                     }
                     else
                     {
@@ -391,11 +393,7 @@ class Program
 
             System.Diagnostics.Debugger.Break();
 
-#error CONST TO IN???
-#error POINTER TYPES TO IN/OUT/REF QUALS
-#error VOID* TO IntPtr???
-#error MAYBE FOR CALLBACKS USE nint for pointers???
-#error CHARS AS MARCHALLING FRO/TO STRING???
+
 
             /*RequiredSpec spec = new RequiredSpec
             {
