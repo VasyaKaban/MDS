@@ -29,81 +29,204 @@ static class ApiExtensions
     }
 }
 
-
-
-struct EnumKey
+class Enum
 {
-    public string Name { get; set; }
-}
+    public Dictionary<Api, string> Values { get; }
 
-struct EnumValue
-{
-    public Dictionary<Api, string> Values { get; set; }
-}
-
-struct CommandKey
-{
-    public string Name { get; set; }
+    public Enum(Dictionary<Api, string> values)
+    {
+        Values = values;
+    }
 }
 
 class CommandArgument
 {
-    public string Name { get; set; }
+    public string Name { get; }
     public string Type { get; set; }
+
+    public CommandArgument(string name, string type)
+    {
+        Name = name;
+        Type = type;
+    }
 }
 
-struct CommandValue
+class Command
 {
-    public string ReturnType { get; set; }
-    public List<CommandArgument> Arguments { get; set; }
+    public string ReturnType { get; }
+    public List<CommandArgument> Arguments { get; }
+
+    public Command(string returnType, List<CommandArgument> arguments)
+    {
+        ReturnType = returnType;
+        Arguments = arguments;
+    }
 }
 
-struct FeatureVersion
+class FeatureVersion
 {
-    public int Major { get; set; }
-    public int Minor { get; set; }
+    public uint Major { get; }
+    public uint Minor { get; }
+
+    public FeatureVersion(uint major, uint minor)
+    {
+        Major = major;
+        Minor = minor;
+    }
+
+    public ulong Flatten()
+    {
+        return (((ulong)Major) << 32) | (ulong)Minor;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (obj is FeatureVersion version)
+            return this == version;
+        else
+            return false;
+    }
+
+    public override int GetHashCode()
+    {
+        return base.GetHashCode();
+    }
+
+    public static bool operator ==(FeatureVersion v1, FeatureVersion v2)
+    {
+        return v1.Flatten() == v2.Flatten();
+    }
+
+    public static bool operator !=(FeatureVersion v1, FeatureVersion v2)
+    {
+        return v1.Flatten() != v2.Flatten();
+    }
+
+    public static bool operator <(FeatureVersion v1, FeatureVersion v2)
+    {
+        return v1.Flatten() < v2.Flatten();
+    }
+
+    public static bool operator >(FeatureVersion v1, FeatureVersion v2)
+    {
+        return v1.Flatten() > v2.Flatten();
+    }
+
+    public static bool operator <=(FeatureVersion v1, FeatureVersion v2)
+    {
+        return v1.Flatten() <= v2.Flatten();
+    }
+
+    public static bool operator >=(FeatureVersion v1, FeatureVersion v2)
+    {
+        return v1.Flatten() >= v2.Flatten();
+    }
 }
 
-struct FeatureKey
+class Feature
 {
-    public string Name { get; set; }
-}
-
-struct FeatureValue
-{
-    public Api Api { get; set; }
-    public FeatureVersion Version { get; set; }
-    public List<string> Enums { get; set; }
-    public List<string> Commands { get; set; }
+    public Api Api { get; }
+    public FeatureVersion Version { get; }
+    public List<string> Enums { get; }
+    public List<string> Commands { get; }
     //public List<string> Types { get; set; }
 
-    public List<string> CoreProfileRemovedEnums { get; set; }
-    public List<string> CoreProfileRemovedCommands { get; set; }
-    public List<string> CoreProfileRemovedTypes { get; set; }
+    public List<string> CoreProfileRemovedEnums { get; }
+    public List<string> CoreProfileRemovedCommands { get; }
+    //public List<string> CoreProfileRemovedTypes { get; }
+
+    public Feature(Api api, FeatureVersion version, List<string> enums, List<string> commands, List<string> coreProfileRemovedEnums, List<string> coreProfileRemovedCommands)
+    {
+        Api = api;
+        Version = version;
+        Enums = enums;
+        Commands = commands;
+        CoreProfileRemovedEnums = coreProfileRemovedEnums;
+        CoreProfileRemovedCommands = coreProfileRemovedCommands;
+    }
 }
 
-struct ExtensionKey
+class Extension
 {
-    public string Name { get; set; }
-}
-
-struct ExtensionValue
-{
-    public bool CoreSupported { get; set; }
-    public List<Api> Apis { get; set; }
-    public List<string> Enums { get; set; }
-    public List<string> Commands { get; set; }
+    public bool CoreSupported { get; }
+    public List<Api> Apis { get; }
+    public List<string> Enums { get; }
+    public List<string> Commands { get; }
     //public List<string> Types { get; set; }
+
+    public Extension(bool coreSupported, List<Api> apis, List<string> enums, List<string> commands)
+    {
+        CoreSupported = coreSupported;
+        Apis = apis;
+        Enums = enums;
+        Commands = commands;
+    }
 }
 
-struct TypeKey
+class Type
 {
-    public string Name { get; set; }
+    public string Data { get; }
+
+    public Type(string data)
+    {
+        Data = data;
+    }
 }
 
-struct TypeValue
+struct Spec
 {
-    public string Data { get; set; }
+    public Dictionary<string, Enum> Enums { get; }
+    public Dictionary<string, Command> Commands { get; }
+    public Dictionary<string, Feature> Features { get; }
+    public Dictionary<string, Extension> Extensions { get; }
+    public Dictionary<string, Type> Types { get; }
+
+    public Spec()
+    {
+        Enums = [];
+        Commands = [];
+        Features = [];
+        Extensions = [];
+        Types = [];
+    }
+}
+
+struct LimitedSpec
+{
+    public readonly Dictionary<string, string> Enums { get; }
+    public readonly Dictionary<string, Command> Commands { get; }
+    public readonly Dictionary<string, Type> Types { get; }
+
+    public readonly Dictionary<string, Feature> listedFeatures { get; }
+    public readonly Dictionary<string, Extension> listedExtensions { get; }
+
+    public LimitedSpec()
+    {
+        Enums = [];
+        Commands = [];
+        Types = [];
+        listedFeatures = [];
+        listedExtensions = [];
+    }
+}
+
+struct SpecRequirements
+{
+    public Api Api
+    {
+        get;
+        init
+        {
+            if (value == Api.Common)
+                throw new ArgumentException($"Api field should not be {field.ToString()}");
+
+            field = value;
+        }
+    }
+
+    public FeatureVersion Version { get; init; }
+    public bool UseCompatibilityProfile { get; init; }
+    public List<string> EnabledExtensions { get; init; }
 }
 
 class Program
@@ -120,35 +243,34 @@ class Program
             XDocument xmlDoc = XDocument.Parse(content);
             var registry = xmlDoc.Element("registry")!;
 
-            var enums = new Dictionary<EnumKey, EnumValue>();
+            Spec spec = new Spec();
 
             var enumElements = from enumGroup in registry.Elements("enums")
                                from enumNode in enumGroup.Elements("enum")
-                               select new
-                               {
-                                   Name = enumNode.Attribute("name")!.Value,
-                                   Api = Api.FromString(enumNode.Attribute("api")?.Value),
-                                   Value = enumNode.Attribute("value")!.Value.ToLower()
-                               };
+                               select
+                               (
+                                   name: enumNode.Attribute("name")!.Value,
+                                   api: Api.FromString(enumNode.Attribute("api")?.Value),
+                                   value: enumNode.Attribute("value")!.Value.ToLower()
+                               );
 
-            foreach (var enumElement in enumElements)
+            foreach (var (name, api, value) in enumElements)
             {
-                var key = new EnumKey { Name = enumElement.Name };
+                var key = name;
 
-                EnumValue value;
-                if (enums.TryGetValue(key, out value))
+                if (spec.Enums.TryGetValue(key, out var enumValue))
                 {
-                    value.Values.Add(enumElement.Api, enumElement.Value);
+                    enumValue.Values.Add(api, value);
                 }
                 else
                 {
-                    enums.Add(key, new EnumValue
-                    {
-                        Values = new Dictionary<Api, string>
+                    spec.Enums.Add(key, new Enum
+                    (
+                        values: new Dictionary<Api, string>
                         {
-                            { enumElement.Api, enumElement.Value }
+                            { api, value }
                         }
-                    });
+                    ));
                 }
             }
 
@@ -156,29 +278,24 @@ class Program
                                   from commandNode in commandGroup.Elements("command")
                                   select
                                   (
-                                    new CommandKey
-                                    {
-                                        Name = commandNode.Element("proto")!.Element("name")!.Value
-                                    },
-                                    new CommandValue
-                                    {
-                                        ReturnType = String.Join(" ", commandNode.Element("proto")!.Nodes().Where(
+                                      name: commandNode.Element("proto")!.Element("name")!.Value,
+                                      value: new Command
+                                      (
+                                        returnType: String.Join(" ", commandNode.Element("proto")!.Nodes().Where(
                                             (n) => n is XText || (n is XElement elem && elem.Name == "ptype")).Select(
                                             (n) => n is XText ? n.ToString().Trim() : ((XElement)n).Value)),
-                                        Arguments = new List<CommandArgument>(from paramNode in commandNode.Elements("param")
-                                                                              select new CommandArgument
-                                                                              {
-                                                                                  Name = paramNode.Element("name")!.Value,
-                                                                                  Type = String.Join(" ", paramNode.Nodes().Where(
-                                                                                      (n) => n is XText || (n is XElement elem && elem.Name == "ptype")).Select(
-                                                                                      (n) => n is XText ? n.ToString().Trim() : ((XElement)n).Value))
-                                                                              })
-                                    }
+                                        arguments: new List<CommandArgument>(from paramNode in commandNode.Elements("param")
+                                                                             select new CommandArgument
+                                                                             (
+                                                                                 name: paramNode.Element("name")!.Value,
+                                                                                 type: String.Join(" ", paramNode.Nodes().Where(
+                                                                                     (n) => n is XText || (n is XElement elem && elem.Name == "ptype")).Select(
+                                                                                     (n) => n is XText ? n.ToString().Trim() : ((XElement)n).Value))
+                                                                             ))
+                                      )
                                   );
 
-            var commands = new Dictionary<CommandKey, CommandValue>();
-
-            foreach (var (key, value) in commandElements)
+            foreach (var (name, value) in commandElements)
             {
                 foreach (var arg in value.Arguments)
                 {
@@ -188,7 +305,7 @@ class Program
                         arg.Type = arg.Type.Replace("const", "").Trim();
                 }
 
-                commands.TryAdd(key, value);
+                spec.Commands.TryAdd(name, value);
             }
 
             var versionRegex = new Regex(@"(\d)\.(\d)");
@@ -199,40 +316,39 @@ class Program
                                   let coreProfileRemoveNodes = featureNode.Elements("remove")
                                   select
                                   (
-                                    new FeatureKey { Name = featureNode.Attribute("name")!.Value },
-                                    new FeatureValue
-                                    {
-                                        Api = Api.FromString(featureNode.Attribute("api")!.Value),
-                                        Version = new FeatureVersion
-                                        {
-                                            Major = int.Parse(versionNumberMatch.Groups[1].Value),
-                                            Minor = int.Parse(versionNumberMatch.Groups[2].Value)
-                                        },
-                                        Enums = new List<string>(from requireNode in requireNodes
-                                                                 from enumNode in requireNode.Elements("enum")
-                                                                 select enumNode.Attribute("name")!.Value),
-                                        Commands = new List<string>(from requireNode in requireNodes
-                                                                    from commandNode in requireNode.Elements("command")
-                                                                    select commandNode.Attribute("name")!.Value),
-                                        /*Types = new List<string>(from requireNode in requireNodes
+                                    name: featureNode.Attribute("name")!.Value,
+                                    value: new Feature
+                                    (
+                                        api: Api.FromString(featureNode.Attribute("api")!.Value),
+                                        version: new FeatureVersion
+                                        (
+                                            major: uint.Parse(versionNumberMatch.Groups[1].Value),
+                                            minor: uint.Parse(versionNumberMatch.Groups[2].Value)
+                                        ),
+                                        enums: new List<string>(from requireNode in requireNodes
+                                                                from enumNode in requireNode.Elements("enum")
+                                                                select enumNode.Attribute("name")!.Value),
+                                        commands: new List<string>(from requireNode in requireNodes
+                                                                   from commandNode in requireNode.Elements("command")
+                                                                   select commandNode.Attribute("name")!.Value),
+                                        /*types: new List<string>(from requireNode in requireNodes
                                                                  from typeNode in requireNode.Elements("type")
                                                                  select typeNode.Attribute("name")!.Value),*/
-                                        CoreProfileRemovedEnums = new List<string>(from coreProfileRemoveNode in coreProfileRemoveNodes
-                                                                                   from enumNode in coreProfileRemoveNode.Elements("enum")
-                                                                                   select enumNode.Attribute("name")!.Value),
-                                        CoreProfileRemovedCommands = new List<string>(from coreProfileRemoveNode in coreProfileRemoveNodes
-                                                                                      from commandNode in coreProfileRemoveNode.Elements("command")
-                                                                                      select commandNode.Attribute("name")!.Value),
-                                        CoreProfileRemovedTypes = new List<string>(from coreProfileRemoveNode in coreProfileRemoveNodes
-                                                                                   from typeNode in coreProfileRemoveNode.Elements("type")
-                                                                                   select typeNode.Attribute("name")!.Value),
+                                        coreProfileRemovedEnums: new List<string>(from coreProfileRemoveNode in coreProfileRemoveNodes
+                                                                                  from enumNode in coreProfileRemoveNode.Elements("enum")
+                                                                                  select enumNode.Attribute("name")!.Value),
+                                        coreProfileRemovedCommands: new List<string>(from coreProfileRemoveNode in coreProfileRemoveNodes
+                                                                                     from commandNode in coreProfileRemoveNode.Elements("command")
+                                                                                     select commandNode.Attribute("name")!.Value)/*,
+                                        coreProfileRemovedTypes: new List<string>(from coreProfileRemoveNode in coreProfileRemoveNodes
+                                                                                  from typeNode in coreProfileRemoveNode.Elements("type")
+                                                                                  select typeNode.Attribute("name")!.Value),*/
 
-                                    }
+                                    )
                                   );
 
-            var features = new Dictionary<FeatureKey, FeatureValue>();
             foreach (var (key, value) in featureElements)
-                features.TryAdd(key, value);
+                spec.Features.TryAdd(key, value);
 
 
             var extensionSupportedSpecRegex = new Regex(@"\w+");
@@ -242,45 +358,43 @@ class Program
                                     let requireNodes = extensionNode.Elements("require")
                                     select
                                     (
-                                      new ExtensionKey { Name = extensionNode.Attribute("name")!.Value },
-                                      new ExtensionValue
-                                      {
-                                          CoreSupported = extensionSupportedSpecMatch.Any((api) => api.Value == "glcore"),
-                                          Apis = new List<Api>(extensionSupportedSpecMatch.Where((m) => m.Value != "glcore").Select((m) => Api.FromString(m.Value))),
-                                          Enums = new List<string>(from requireNode in requireNodes
-                                                                   from enumNode in requireNode.Elements("enum")
-                                                                   select enumNode.Attribute("name")!.Value),
-                                          Commands = new List<string>(from requireNode in requireNodes
-                                                                      from commandNode in requireNode.Elements("command")
-                                                                      select commandNode.Attribute("name")!.Value)/*,
-                                          Types = new List<string>(from requireNode in requireNodes
+                                      name: extensionNode.Attribute("name")!.Value,
+                                      value: new Extension
+                                      (
+                                          coreSupported: extensionSupportedSpecMatch.Any((api) => api.Value == "glcore"),
+                                          apis: new List<Api>(extensionSupportedSpecMatch.Where((m) => m.Value != "glcore").Select((m) => Api.FromString(m.Value))),
+                                          enums: new List<string>(from requireNode in requireNodes
+                                                                  from enumNode in requireNode.Elements("enum")
+                                                                  select enumNode.Attribute("name")!.Value),
+                                          commands: new List<string>(from requireNode in requireNodes
+                                                                     from commandNode in requireNode.Elements("command")
+                                                                     select commandNode.Attribute("name")!.Value)/*,
+                                          types: new List<string>(from requireNode in requireNodes
                                                                    from typeNode in requireNode.Elements("type")
                                                                    select typeNode.Attribute("name")!.Value)*/
-                                      }
+                                      )
                                     );
 
-            var extensions = new Dictionary<ExtensionKey, ExtensionValue>();
             foreach (var (key, value) in extensionElements)
-                extensions.TryAdd(key, value);
+                spec.Extensions.TryAdd(key, value);
 
 
             var typeElements = from typeNode in registry.Element("types")!.Elements("type")
                                select
                                (
-                                 new TypeKey { Name = (typeNode.Attribute("name") is not null ? typeNode.Attribute("name")!.Value : typeNode.Element("name")!.Value) },
-                                 new TypeValue
-                                 {
-                                     Data = String.Join("", typeNode.Nodes().Where(
+                                 name: (typeNode.Attribute("name") is not null ? typeNode.Attribute("name")!.Value : typeNode.Element("name")!.Value),
+                                 value: new Type
+                                 (
+                                     data: String.Join("", typeNode.Nodes().Where(
                                          (n) => n is XText).Select(
                                          (n) => n.ToString()))
-                                 }
+                                 )
                                );
 
             var functionPointerRegex = new Regex(@"\(\s*\*\s*\)");
             var functionPointerSplitRegex = new Regex(@"(\w+ ?\w+\s*\*|\w+ )(\w+)");
             var functionPointerReturnTypeRegex = new Regex(@"(\w+)\s*\(\s*\*\s*\)");
 
-            var types = new Dictionary<TypeKey, TypeValue>();
             foreach (var (key, value) in typeElements)
             {
                 //prepare types
@@ -295,8 +409,8 @@ class Program
 
                 if (clearType.Length == 0)
                 {
-                    clearType = key.Name.Replace("struct", "").Trim();
-                    types.TryAdd(new TypeKey { Name = clearType }, new TypeValue { Data = "void *" });
+                    clearType = key.Replace("struct", "").Trim();
+                    spec.Types.TryAdd(clearType, new Type(data: "void *"));
                 }
                 else
                 {
@@ -317,26 +431,18 @@ class Program
                     }
                     else
                     {
-                        TypeValue tmpValue;
-                        if (types.TryGetValue(new TypeKey { Name = clearType }, out tmpValue))
+                        if (spec.Types.TryGetValue(clearType, out var tmpValue))
                         {
                             clearType = tmpValue.Data;
                         }
                         else
                         {
-                            //Let's target on 64-bit arch
                             clearType = clearType switch
                             {
                                 "unsigned char" => "byte",
                                 "unsigned short" => "ushort",
                                 "unsigned int" => "uint",
-
                                 "char" => "sbyte",
-                                "int" => "int",
-                                "float" => "float",
-                                "double" => "double",
-                                "void" => "void",
-
                                 "int8" => "sbyte",
                                 "uint8" => "byte",
                                 "int16" => "short",
@@ -346,81 +452,115 @@ class Program
                                 "int64" => "long",
                                 "uint64" => "ulong",
 
-                                "intptr" => "long",
-                                "ssize" => "long",
+                                "intptr" => "nint",
+                                "ssize" => "nint",
                                 _ => clearType
                             };
                         }
                     }
 
-                    types.TryAdd(key, new TypeValue { Data = clearType });
+                    spec.Types.TryAdd(key, new Type(data: clearType));
                 }
             }
 
-            /*foreach (var (key, value) in enums)
+            SpecRequirements requiredSpec = new SpecRequirements
             {
-                Console.WriteLine($"Enum: {key.Name}, Values: {String.Join(", ", value.Values.Select((kv) => "[" + kv.Key.ToString() + "]" + " -> " + kv.Value))}");
+                Api = Api.GL,
+                Version = new FeatureVersion(major: 4, minor: 5),
+                UseCompatibilityProfile = true,
+                EnabledExtensions = ["GL_ARB_base_instance", "GL_ARB_internalformat_query2"]
+            };
+
+            LimitedSpec limitedSpec = new LimitedSpec();
+
+            //add all types from spec
+            foreach (var (name, type) in spec.Types)
+            {
+                limitedSpec.Types.Add(name, type);
             }
 
-            foreach (var (key, value) in commands)
+            //add features
+            foreach (var (name, feature) in spec.Features)
             {
-                Console.WriteLine($"Command: {value.ReturnType} {key.Name}({String.Join(", ", value.Arguments.Select((a) => a.Type + " " + a.Name))})");
+                //check feature API
+                if (feature.Api != requiredSpec.Api)
+                    continue;
+
+                //break if we out of versions
+                if (feature.Version > requiredSpec.Version)
+                    break;
+
+                limitedSpec.listedFeatures.Add(name, feature);
+
+                //add every enum from current feature
+                foreach (var enumName in feature.Enums)
+                {
+                    Enum enumValue = spec.Enums[enumName];
+
+                    if (enumValue.Values.ContainsKey(Api.Common))
+                        limitedSpec.Enums.TryAdd(enumName, enumValue.Values[Api.Common]);
+                    else if (enumValue.Values.ContainsKey(requiredSpec.Api))
+                        limitedSpec.Enums.TryAdd(enumName, enumValue.Values[requiredSpec.Api]);
+                }
+
+                //add every commands from current feature
+                foreach (var commandName in feature.Commands)
+                {
+                    Command commandValue = spec.Commands[commandName];
+
+                    limitedSpec.Commands.TryAdd(commandName, commandValue);
+                }
+
+                if (!requiredSpec.UseCompatibilityProfile)
+                {
+                    //remove all non-core enums
+                    foreach (var enumName in feature.CoreProfileRemovedEnums)
+                        limitedSpec.Enums.Remove(enumName);
+
+                    //remove all non-core commands
+                    foreach (var commandName in feature.CoreProfileRemovedCommands)
+                        limitedSpec.Commands.Remove(commandName);
+                }
             }
 
-            foreach (var (key, value) in features)
+            //add extensions
+            foreach (var requiredExt in requiredSpec.EnabledExtensions)
             {
-                Console.WriteLine($"Feature: {key.Name}; Api: {value.Api.ToString()}; Version: {value.Version.Major}.{value.Version.Minor}");
-                Console.WriteLine($"FeatureEnums({value.Enums.Count}):\n{String.Join("\n", value.Enums)}");
-                Console.WriteLine($"FeatureCommands({value.Commands.Count}):\n{String.Join("\n", value.Commands)}");
-                Console.WriteLine($"FeatureTypes({value.Types.Count}):\n{String.Join("\n", value.Types)}");
-                Console.WriteLine($"FeatureCoreProfileRemovedEnums({value.CoreProfileRemovedEnums.Count}):\n{String.Join("\n", value.CoreProfileRemovedEnums)}");
-                Console.WriteLine($"FeatureCoreProfileRemovedCommands({value.CoreProfileRemovedCommands.Count}):\n{String.Join("\n", value.CoreProfileRemovedCommands)}");
-                Console.WriteLine($"FeatureCoreProfileRemovedTypes({value.CoreProfileRemovedTypes.Count}):\n{String.Join("\n", value.CoreProfileRemovedTypes)}");
+                if (spec.Extensions.TryGetValue(requiredExt, out var extension))
+                {
+                    if (!extension.Apis.Contains(requiredSpec.Api))
+                        throw new Exception($"Extension: {requiredExt} do not implemented in current API set: {requiredSpec.Api}. Only supported APIs: [{String.Join(", ", extension.Apis)}]");
+
+                    if (!requiredSpec.UseCompatibilityProfile && !extension.CoreSupported)
+                        throw new Exception($"Extension: {requiredExt} is not supported in Core profile");
+
+                    limitedSpec.listedExtensions.Add(requiredExt, extension);
+
+                    //add every enum from current extension
+                    foreach (var enumName in extension.Enums)
+                    {
+                        Enum enumValue = spec.Enums[enumName];
+
+                        if (enumValue.Values.ContainsKey(Api.Common))
+                            limitedSpec.Enums.TryAdd(enumName, enumValue.Values[Api.Common]);
+                        else if (enumValue.Values.ContainsKey(requiredSpec.Api))
+                            limitedSpec.Enums.TryAdd(enumName, enumValue.Values[requiredSpec.Api]);
+                    }
+
+                    //add every commands from current extension
+                    foreach (var commandName in extension.Commands)
+                    {
+                        Command commandValue = spec.Commands[commandName];
+
+                        limitedSpec.Commands.TryAdd(commandName, commandValue);
+                    }
+                }
+                else
+                    throw new Exception($"Extension: {requiredExt} has not been found in registry");
             }
 
-            foreach (var (key, value) in extensions)
-            {
-                Console.WriteLine($"Extension: {key.Name}; CoreSupported: {value.CoreSupported}; Apis: {String.Join(", ", value.Apis.Select((a) => a.ToString()))}");
-                Console.WriteLine($"ExtensionEnums({value.Enums.Count}):\n{String.Join("\n", value.Enums)}");
-                Console.WriteLine($"ExtensionCommands({value.Commands.Count}):\n{String.Join("\n", value.Commands)}");
-                Console.WriteLine($"ExtensionTypes({value.Types.Count}):\n{String.Join("\n", value.Types)}");
-            }*/
-
-            foreach (var (key, value) in types)
-            {
-                Console.WriteLine($"Type: {key.Name}; Data: {value.Data}");
-            }
 
             System.Diagnostics.Debugger.Break();
-
-
-
-            /*RequiredSpec spec = new RequiredSpec
-            {
-                Pofile = SpecPofile.Core,
-                SpecificationType = SpecType.OpenGL,
-                Version = new SpecVersion { Major = 4, Minor = 5 },
-                Extensions = ["GL_S3_s3tc", "GL_ARB_base_instance"]
-            };*/
-
-
-            /*
-             Find features:
-                if feature api is current and number is <= current:
-                    append all in require tag
-                    if profile is Core:
-                        remove all in remove tag
-
-             Find extensions:
-                if extension in list and is supported by current api and if current profile is compatibility but extension have glcore then emit error:
-                    append all in require tag
-             */
-
-            //foreach (var (key, value) in enums)
-            //    Console.WriteLine($"[{(key.Api is null ? "common" : key.Api)}]: {key.Name} = {value.Value} : {(value.Type is null ? "enum" : value.Type)}");
-
-            //foreach (var (key, value) in commands)
-            //    Console.WriteLine($"{value.ReturnType} {key.Name}({String.Join(", ", value.Arguments.Select((arg) => String.Concat(arg.Type, " ", arg.Name)))})");
         }
         catch (Exception ex)
         {
