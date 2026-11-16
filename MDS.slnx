@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="Engine/Engine.csproj" Id="688c61f9-3df3-4a4b-a451-5c2354bf8f78" />
   <Project Path="OpenGLSpecParser/OpenGLSpecParser.csproj" />
 </Solution>
