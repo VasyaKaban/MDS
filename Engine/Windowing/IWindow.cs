@@ -368,10 +368,10 @@
     {
         IWindowSubsystem Subsystem { get; }
 
-        string Title { get; }
-        WindowPosition Position { get; }
-        WindowExtent Extent { get; }
-        WindowState State { get; }
+        string Title { get; set; }
+        WindowPosition Position { get; set; }
+        WindowExtent Extent { get; set; }
+        WindowState State { get; set; }
 
         bool TextInputEnabled { get; set; }//if enabled - collects all text input events(implementation) and emits KeyboardTextInputted
 

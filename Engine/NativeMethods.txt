@@ -1,0 +1,9 @@
+GetModuleHandleW 
+RegisterClassExW
+UnregisterClassW
+CreateWindowExW
+DestroyWindow
+SetWindowLongPtrW 
+GetWindowLongPtrW
+GetWindowTextLengthW 
+GetWindowTextW
