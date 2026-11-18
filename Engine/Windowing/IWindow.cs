@@ -35,18 +35,16 @@
 
     public class WindowCreateInfo
     {
-        public WindowCreateInfo(string title, WindowPosition position, WindowExtent extent, WindowState state, bool textInputEnabled)
+        public WindowCreateInfo(string title, WindowExtent extent, WindowState state, bool textInputEnabled)
         {
             Title = title;
-            Position = position;
             Extent = extent;
             State = state;
             TextInputEnabled = textInputEnabled;
         }
 
         public string Title { get; }
-        public WindowPosition Position { get; }
-        public WindowExtent Extent { get; }
+        public WindowExtent Extent { get; }//client rect
         public WindowState State { get; }
         public bool TextInputEnabled { get; }
     }
@@ -58,7 +56,7 @@
             TimeMs = timeMs;
         }
 
-        public ulong TimeMs { get; } 
+        public ulong TimeMs { get; }
     }
 
     public class WindowClosedEventArgs : WindowEventArgs
@@ -86,33 +84,6 @@
         }
 
         public WindowPosition Position { get; }
-    }
-
-    public class WindowMinimizedEventArgs : WindowEventArgs
-    {
-        public WindowMinimizedEventArgs(ulong timeMs) : base(timeMs)
-        {
-        }
-    }
-
-    public class WindowMaximizedEventArgs : WindowEventArgs
-    {
-        public WindowMaximizedEventArgs(ulong timeMs, WindowExtent extent) : base(timeMs)
-        {
-            Extent = extent;
-        }
-
-        public WindowExtent Extent { get; }
-    }
-
-    public class WindowRestoredEventArgs : WindowEventArgs
-    {
-        public WindowRestoredEventArgs(ulong timeMs, WindowExtent extent) : base(timeMs)
-        {
-            Extent = extent;
-        }
-
-        public WindowExtent Extent { get; }
     }
 
     [Flags]
@@ -382,9 +353,6 @@
         event Action<IWindow, WindowClosedEventArgs> Closed;
         event Action<IWindow, WindowResizedEventArgs> Resized;
         event Action<IWindow, WindowMovedEventArgs> Moved;
-        event Action<IWindow, WindowMinimizedEventArgs> Minimized;
-        event Action<IWindow, WindowMaximizedEventArgs> Maximized;
-        event Action<IWindow, WindowRestoredEventArgs> Restored;
         event Action<IWindow, WindowMouseFocusGainedEventArgs> MouseFocusGained;
         event Action<IWindow, WindowMouseFocusLeftEventArgs> MouseFocusLeft;
         event Action<IWindow, WindowKeyboardFocusGainedEventArgs> KeyboardFocusGained;
