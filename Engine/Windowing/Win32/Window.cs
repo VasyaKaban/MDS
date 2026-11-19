@@ -22,6 +22,8 @@ namespace Engine.Windowing.Win32
         {
             this.subsystem = subsystem;
             isTextInputEnabled = info.TextInputEnabled;
+            previousMouseCursorPosition = new WindowPosition(0, 0);
+            isClosed = false;
 
             //State -> ignore
 
@@ -33,7 +35,7 @@ namespace Engine.Windowing.Win32
                     fixed (char* lpClassName = WindowSubsystem.WINDOW_CLASS_NAME)
                     fixed (char* lpWindowName = info.Title)
                     {
-                        WINDOW_STYLE dwStyle = WINDOW_STYLE.WS_OVERLAPPED | WINDOW_STYLE.WS_VISIBLE;
+                        WINDOW_STYLE dwStyle = WINDOW_STYLE.WS_OVERLAPPEDWINDOW | WINDOW_STYLE.WS_VISIBLE;
                         WINDOW_EX_STYLE dwExStyle = 0;
 
                         var winPos = FromClientToWindowExtent(info.Extent, dwStyle, dwExStyle);
@@ -67,7 +69,7 @@ namespace Engine.Windowing.Win32
             }
         }
 
-        public IWindowSubsystem Subsystem => throw new NotImplementedException();
+        public IWindowSubsystem Subsystem => subsystem;
 
         public string Title
         {
@@ -88,7 +90,7 @@ namespace Engine.Windowing.Win32
                 if (titleLength == 0)
                     throw new Win32Exception();
 
-                return title.ToString();
+                return title.Slice(0, titleLength).ToString();
             }
             set
             {
@@ -100,18 +102,6 @@ namespace Engine.Windowing.Win32
                             throw new Win32Exception();
                     }
                 }
-            }
-        }
-
-        public WindowPosition Position
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-            set
-            {
-                throw new NotImplementedException();
             }
         }
 
@@ -146,8 +136,11 @@ namespace Engine.Windowing.Win32
         }
         public WindowState State { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         public bool TextInputEnabled { get => isTextInputEnabled; set => isTextInputEnabled = value; }
+        public bool IsClosed { get => isClosed; set => isClosed = value; }
 
         public HWND Handle { get => hWnd; }
+        public bool IsMouseCaptured { get => isMouseCaptured; set => isMouseCaptured = value; }
+        public WindowPosition PreviousMouseCursorPosition { get => previousMouseCursorPosition; set => previousMouseCursorPosition = value; }
 
         public void Dispose()
         {
@@ -198,8 +191,8 @@ namespace Engine.Windowing.Win32
                 case WindowMouseCursorMovedEventArgs mouseCursorMoved:
                     MouseCursorMoved?.Invoke(this, mouseCursorMoved);
                     break;
-                case WindowMouseButtonPressedEventArgs mouseButtonPressed:
-                    MouseButtonPressed?.Invoke(this, mouseButtonPressed);
+                case WindowMouseButtonToggledEventArgs mouseButtonToggled:
+                    MouseButtonToggled?.Invoke(this, mouseButtonToggled);
                     break;
                 case WindowMouseWheelScrolledEventArgs mouseWheelScrolled:
                     MouseWheelScrolled?.Invoke(this, mouseWheelScrolled);
@@ -221,7 +214,7 @@ namespace Engine.Windowing.Win32
         public event Action<IWindow, WindowKeyboardFocusGainedEventArgs>? KeyboardFocusGained;
         public event Action<IWindow, WindowKeyboardFocusLeftEventArgs>? KeyboardFocusLeft;
         public event Action<IWindow, WindowMouseCursorMovedEventArgs>? MouseCursorMoved;
-        public event Action<IWindow, WindowMouseButtonPressedEventArgs>? MouseButtonPressed;
+        public event Action<IWindow, WindowMouseButtonToggledEventArgs>? MouseButtonToggled;
         public event Action<IWindow, WindowMouseWheelScrolledEventArgs>? MouseWheelScrolled;
         public event Action<IWindow, WindowKeyboardKeyToggledEventArgs>? KeyboardKeyToggled;
         public event Action<IWindow, WindowKeyboardTextInputtedEventArgs>? KeyboardTextInputted;
@@ -230,5 +223,8 @@ namespace Engine.Windowing.Win32
         private HWND hWnd;
         private WindowSubsystem subsystem;
         private bool isTextInputEnabled;
+        private bool isClosed;
+        private bool isMouseCaptured;
+        private WindowPosition previousMouseCursorPosition;
     }
 }

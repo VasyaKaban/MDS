@@ -7,9 +7,19 @@ namespace Engine.Windowing
         IWindow CreateWindow(in WindowCreateInfo info);
 
         void PollEvents();
-         
-        KeyaboardKey ScanCodeToKey(uint scanCode);
 
-        uint KeyToScanCode(KeyaboardKey key);
+        KeyboardKey? ScanCodeToKey(uint scanCode);
+
+        uint? KeyToScanCode(KeyboardKey key);
+
+        static IWindowSubsystem CreateSubsystem()
+        {
+            if (OperatingSystem.IsWindowsVersionAtLeast(10, 0))
+            {
+                return new Win32.WindowSubsystem();
+            }
+            else
+                throw new NotImplementedException("Only Win32NT is implemented");
+        }
     }
 }

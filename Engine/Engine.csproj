@@ -5,7 +5,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-	<Platforms>AnyCPU;x64</Platforms> 
+	<Platforms>AnyCPU;x64</Platforms>
+	<OutputType>Exe</OutputType> 
   </PropertyGroup>
 
   <ItemGroup>
