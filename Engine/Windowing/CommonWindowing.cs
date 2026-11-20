@@ -1,29 +1,10 @@
 ﻿namespace Engine.Windowing
 {
-    public class WindowExtent
-    {
-        public WindowExtent(uint width, uint height)
-        {
-            Width = width;
-            Height = height;
-        }
+    public record struct WindowExtent(uint Width, uint Height);
 
-        public uint Width { get; }
-        public uint Height { get; }
-    }
-
-    public class WindowPosition
+    public record struct WindowPosition(int X, int Y)
     {
         public const int DEFAULT_POSITION = int.MaxValue;
-
-        public WindowPosition(int x, int y)
-        {
-            X = x;
-            Y = y;
-        }
-
-        public int X { get; }
-        public int Y { get; }
     }
 
     public enum WindowState
@@ -32,23 +13,15 @@
         FullScreen
     }
 
-    public class WindowCreateInfo
+    public struct WindowCreateInfo
     {
-        public WindowCreateInfo(string title, WindowExtent extent, WindowState state, bool textInputEnabled)
-        {
-            Title = title;
-            Extent = extent;
-            State = state;
-            TextInputEnabled = textInputEnabled;
-        }
-
-        public string Title { get; }
-        public WindowExtent Extent { get; }//client rect
-        public WindowState State { get; }
-        public bool TextInputEnabled { get; }
+        public string Title { get; set; }
+        public WindowExtent Extent { get; set; }//client rect
+        public WindowState State { get; set; }
+        public bool TextInputEnabled { get; set; }
     }
 
-    public abstract class WindowEventArgs
+    public closed class WindowEventArgs
     {
         protected WindowEventArgs(ulong timeMs)
         {
@@ -328,4 +301,11 @@
     }
 
     public record VideoMode(uint Width, uint Height, uint RefreshRate);
+
+    public class WindowDisplayChangedEventArgs : WindowEventArgs
+    {
+        public WindowDisplayChangedEventArgs(ulong timeMs) : base(timeMs)
+        {
+        }
+    }
 }

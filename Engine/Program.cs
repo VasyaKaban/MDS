@@ -1,7 +1,4 @@
 ﻿using Engine.Windowing;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Engine
 {
@@ -10,7 +7,14 @@ namespace Engine
         public static void Main(string[] args)
         {
             using IWindowSubsystem subsystem = IWindowSubsystem.CreateSubsystem();
-            using IWindow window = subsystem.CreateWindow(new WindowCreateInfo("amogus", new WindowExtent(800, 600), WindowState.Windowed, false));
+            using IWindow window = subsystem.CreateWindow(
+                new WindowCreateInfo
+                {
+                    Title = "amogus",
+                    Extent = new WindowExtent(800, 600),
+                    State = WindowState.Windowed,
+                    TextInputEnabled = false
+                });
 
             ulong eventId = 0;
 
@@ -88,7 +92,7 @@ namespace Engine
                 Console.Out.WriteLine($"Buttons: {args.Buttons}");
             };
 
-            window.KeyboardKeyToggled += (_, args) =>
+            window.KeyboardKeyToggled += (win, args) =>
             {
                 Console.Out.WriteLine($"#{eventId++};=========================================================================");
                 Console.Out.WriteLine($"KeyboardKeyToggled: {args.TimeMs}ms");
@@ -114,6 +118,21 @@ namespace Engine
                 //Console.Out.WriteLine($"KeyboardTextInputted: {args.TimeMs}ms");
                 //Console.Out.WriteLine($"Modifiers: {args.Modifiers}");
                 //Console.Out.WriteLine($"Text: {args.Text}");
+            };
+
+            window.DisplayChanged += (win, args) =>
+            {
+                var currentVideoMode = win.GetCurrentDisplayVideoMode();
+                var displayModes = win.GetAvailableDisplayVideoModes();
+
+                Console.Out.WriteLine($"#{eventId++};=========================================================================");
+                Console.Out.WriteLine($"DisplayChanged: {args.TimeMs}ms");
+                Console.Out.WriteLine($"Current: {currentVideoMode.Width}x{currentVideoMode.Height}:{currentVideoMode.RefreshRate}Hz");
+                foreach (var (mode, index) in displayModes.Select((mode, index) => (mode, index)))
+                {
+                    Console.Out.WriteLine($"Mode({index}): {mode.Width}x{mode.Height}:{mode.RefreshRate}Hz");
+                }
+
             };
 
             while (!window.IsClosed)

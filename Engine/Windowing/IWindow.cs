@@ -12,7 +12,7 @@
         bool IsClosed { get; }
 
         VideoMode GetCurrentDisplayVideoMode();
-        IEnumerable<VideoMode> GetAvailableDisplayVideoModes();
+        IReadOnlyCollection<VideoMode> GetAvailableDisplayVideoModes();
         void SetDisplayVideoMode(VideoMode videoMode);
 
         event Action<IWindow, WindowClosedEventArgs> Closed;
@@ -27,5 +27,6 @@
         event Action<IWindow, WindowMouseWheelScrolledEventArgs> MouseWheelScrolled;
         event Action<IWindow, WindowKeyboardKeyToggledEventArgs> KeyboardKeyToggled;
         event Action<IWindow, WindowKeyboardTextInputtedEventArgs> KeyboardTextInputted;
+        event Action<IWindow, WindowDisplayChangedEventArgs> DisplayChanged;
     }
 }

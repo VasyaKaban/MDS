@@ -12,7 +12,7 @@ using Windows.Win32.UI.WindowsAndMessaging;
 namespace Engine.Windowing.Win32
 {
     [SupportedOSPlatform("windows10.0")]
-    internal class WindowSubsystem : IWindowSubsystem
+    internal sealed class WindowSubsystem : IWindowSubsystem
     {
         public struct Event
         {
@@ -23,7 +23,7 @@ namespace Engine.Windowing.Win32
         private static MouseButtons GetMouseButtonsFromWParam(WPARAM wParam)
         {
             MODIFIERKEYS_FLAGS rawButtons = PInvoke.GET_KEYSTATE_WPARAM(wParam);
-       
+
             MouseButtons buttons = 0;
             if (rawButtons.HasFlag(MODIFIERKEYS_FLAGS.MK_LBUTTON))
                 buttons |= MouseButtons.Left;
@@ -82,7 +82,7 @@ namespace Engine.Windowing.Win32
                 bool returnDefault = true;
 
                 nint userdata = PInvoke.GetWindowLongPtr(hWnd, WINDOW_LONG_PTR_INDEX.GWLP_USERDATA);
-                if(userdata != 0)
+                if (userdata != 0)
                 {
                     GCHandle gcHandle = GCHandle.FromIntPtr(userdata);
                     Window win = (Window)gcHandle.Target!;
@@ -229,7 +229,7 @@ namespace Engine.Windowing.Win32
                             ushort rawScanCode = (byte)((uLParam >> 16) & 0xFF);
                             if (((uLParam >> 24) & 0b1) == 1)//isExtended
                                 rawScanCode |= 0xE000;
-      
+
                             bool isPressed = ((uLParam >> 31) & 0b1) == 0;
 
                             VIRTUAL_KEY vk = (VIRTUAL_KEY)(wParam.Value & 0xFF);
@@ -237,15 +237,15 @@ namespace Engine.Windowing.Win32
                                 vk = (VIRTUAL_KEY)PInvoke.MapVirtualKeyEx(rawScanCode, MAP_VIRTUAL_KEY_TYPE.MAPVK_VSC_TO_VK_EX, HKL.Null);
 
                             uint ps2ScanCode = 0;
-                            if(vk == VIRTUAL_KEY.VK_PAUSE && rawScanCode == 0x45)//set real Pause scan code
+                            if (vk == VIRTUAL_KEY.VK_PAUSE && rawScanCode == 0x45)//set real Pause scan code
                                 ps2ScanCode = 0xE11D45;
-                            else if(vk == VIRTUAL_KEY.VK_NUMLOCK && rawScanCode == 0xE045)
+                            else if (vk == VIRTUAL_KEY.VK_NUMLOCK && rawScanCode == 0xE045)
                                 ps2ScanCode = 0x45;
                             else
                                 ps2ScanCode = rawScanCode;
 
                             KeyboardKey key;
-                            if(!subsystem.scanCodeToKeyMapping.TryGetValue(ps2ScanCode, out key))
+                            if (!subsystem.scanCodeToKeyMapping.TryGetValue(ps2ScanCode, out key))
                             {
                                 string? vkName = subsystem.virtualKeyToNameMapping[(uint)vk];
                                 if (vkName != null)
@@ -290,10 +290,18 @@ namespace Engine.Windowing.Win32
                             }
                             break;
                         case PInvoke.WM_SYSCOMMAND:
-                            if((int)(wParam.Value & 0xFFF0) == PInvoke.SC_KEYMENU)
+                            if ((int)(wParam.Value & 0xFFF0) == PInvoke.SC_KEYMENU)
                                 returnDefault = false;
                             break;
-                        //TODO: Handle WM_DISPLAYCHANGE
+                        case PInvoke.WM_DISPLAYCHANGE:
+                            win.UpdateMonitor();
+                            subsystem.EnqueueEvent(
+                                new Event
+                                {
+                                    win = win,
+                                    args = new WindowDisplayChangedEventArgs(timeMs)
+                                });
+                            break;
                     }
                 }
 
@@ -319,7 +327,7 @@ namespace Engine.Windowing.Win32
                 throw new Win32Exception();
 
             Span<HKL> keyboardLayouts = stackalloc HKL[layoutCount];
-            if(PInvoke.GetKeyboardLayoutList(keyboardLayouts) == 0)
+            if (PInvoke.GetKeyboardLayoutList(keyboardLayouts) == 0)
                 throw new Win32Exception();
 
             virtualKeyToNameMapping = new string?[256];
@@ -338,7 +346,7 @@ namespace Engine.Windowing.Win32
                 }
             }
 
-            foreach(var (ps2ScanCode, key) in PS2Set1StableScanCodeMapping.MAPPING)
+            foreach (var (ps2ScanCode, key) in PS2Set1StableScanCodeMapping.MAPPING)
             {
                 scanCodeToKeyMapping.Add(ps2ScanCode, key);
                 keyToScanCodeMapping.Add(key, ps2ScanCode);
