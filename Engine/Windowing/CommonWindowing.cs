@@ -86,9 +86,8 @@
     }
 
     [Flags]
-    public enum MouseButton : uint
+    public enum MouseButtons : uint
     {
-        None = 0,
         Left = 1 << 0,
         Right = 1 << 1,
         Middle = 1 << 2,
@@ -98,14 +97,14 @@
 
     public class WindowMouseFocusGainedEventArgs : WindowEventArgs
     {
-        public WindowMouseFocusGainedEventArgs(ulong timeMs, WindowPosition cursorPosition, MouseButton buttons) : base(timeMs)
+        public WindowMouseFocusGainedEventArgs(ulong timeMs, WindowPosition cursorPosition, MouseButtons buttons) : base(timeMs)
         {
             CursorPosition = cursorPosition;
             Buttons = buttons;
         }
 
         public WindowPosition CursorPosition { get; }//relative to the current window
-        public MouseButton Buttons { get; }
+        public MouseButtons Buttons { get; }
     }
 
     public class WindowMouseFocusLeftEventArgs : WindowEventArgs
@@ -131,7 +130,7 @@
 
     public class WindowMouseCursorMovedEventArgs : WindowEventArgs
     {
-        public WindowMouseCursorMovedEventArgs(ulong timeMs, WindowPosition cursorPosition, WindowPosition directionDelta, MouseButton buttons) : base(timeMs)
+        public WindowMouseCursorMovedEventArgs(ulong timeMs, WindowPosition cursorPosition, WindowPosition directionDelta, MouseButtons buttons) : base(timeMs)
         {
             CursorPosition = cursorPosition;
             DirectionDelta = directionDelta;
@@ -140,12 +139,12 @@
 
         public WindowPosition CursorPosition { get; }//relative to the current window
         public WindowPosition DirectionDelta { get; }//delta between previous position and current
-        public MouseButton Buttons { get; }
+        public MouseButtons Buttons { get; }
     }
 
     public class WindowMouseButtonToggledEventArgs : WindowEventArgs
     {
-        public WindowMouseButtonToggledEventArgs(ulong timeMs, WindowPosition cursorPosition, MouseButton button, uint clicks, bool isPressed) : base(timeMs)
+        public WindowMouseButtonToggledEventArgs(ulong timeMs, WindowPosition cursorPosition, MouseButtons button, uint clicks, bool isPressed) : base(timeMs)
         {
             CursorPosition = cursorPosition;
             Button = button;
@@ -154,14 +153,14 @@
         }
 
         public WindowPosition CursorPosition { get; }//relative to the current window
-        public MouseButton Button { get; }
+        public MouseButtons Button { get; }
         public uint Clicks { get; }
         public bool IsPressed { get; }
     }
 
     public class WindowMouseWheelScrolledEventArgs : WindowEventArgs
     {
-        public WindowMouseWheelScrolledEventArgs(ulong timeMs, WindowPosition cursorPosition, MouseButton buttons, float horizontalScrollDelta, float verticalScrollDelta) : base(timeMs)
+        public WindowMouseWheelScrolledEventArgs(ulong timeMs, WindowPosition cursorPosition, MouseButtons buttons, float horizontalScrollDelta, float verticalScrollDelta) : base(timeMs)
         {
             CursorPosition = cursorPosition;
             Buttons = buttons;
@@ -170,7 +169,7 @@
         }
 
         public WindowPosition CursorPosition { get; }//relative to the current window
-        public MouseButton Buttons { get; }
+        public MouseButtons Buttons { get; }
         public float HorizontalScrollDelta { get; }
         public float VerticalScrollDelta { get; }
     }
@@ -178,7 +177,6 @@
     [Flags]
     public enum KeyboardModifiers : uint
     {
-        None = 0,
         LeftShift = 1 << 0,
         RightShift = 1 << 1,
         LeftControl = 1 << 2,

@@ -12,25 +12,31 @@ namespace Engine
             using IWindowSubsystem subsystem = IWindowSubsystem.CreateSubsystem();
             using IWindow window = subsystem.CreateWindow(new WindowCreateInfo("amogus", new WindowExtent(800, 600), WindowState.Windowed, false));
 
+            ulong eventId = 0;
+
             window.Closed += (_, args) =>
             {
+                Console.Out.WriteLine($"#{eventId++};=========================================================================");
                 Console.Out.WriteLine($"Closed: {args.TimeMs}ms");
             };
 
             window.Resized += (_, args) =>
             {
+                Console.Out.WriteLine($"#{eventId++};=========================================================================");
                 Console.Out.WriteLine($"Resized: {args.TimeMs}ms");
                 Console.Out.WriteLine($"Extent: {args.Extent.Width}; {args.Extent.Height}");
             };
 
             window.Moved += (_, args) =>
             {
+                Console.Out.WriteLine($"#{eventId++};=========================================================================");
                 Console.Out.WriteLine($"Moved: {args.TimeMs}ms");
                 Console.Out.WriteLine($"Position: {args.Position.X}; {args.Position.Y}");
             };
 
             window.MouseFocusGained += (_, args) =>
             {
+                Console.Out.WriteLine($"#{eventId++};=========================================================================");
                 Console.Out.WriteLine($"MouseFocusGained: {args.TimeMs}ms");
                 Console.Out.WriteLine($"CursorPosition: {args.CursorPosition.X}; {args.CursorPosition.Y}");
                 Console.Out.WriteLine($"Buttons: {args.Buttons}");
@@ -38,21 +44,25 @@ namespace Engine
 
             window.MouseFocusLeft += (_, args) =>
             {
+                Console.Out.WriteLine($"#{eventId++};=========================================================================");
                 Console.Out.WriteLine($"MouseFocusLeft: {args.TimeMs}ms");
             };
 
             window.KeyboardFocusGained += (_, args) =>
             {
+                Console.Out.WriteLine($"#{eventId++};=========================================================================");
                 Console.Out.WriteLine($"KeyboardFocusGained: {args.TimeMs}ms");
             };
 
             window.KeyboardFocusLeft += (_, args) =>
             {
+                Console.Out.WriteLine($"#{eventId++};=========================================================================");
                 Console.Out.WriteLine($"KeyboardFocusLeft: {args.TimeMs}ms");
             };
 
             window.MouseCursorMoved += (_, args) =>
             {
+                Console.Out.WriteLine($"#{eventId++};=========================================================================");
                 Console.Out.WriteLine($"MouseCursorMoved: {args.TimeMs}ms");
                 Console.Out.WriteLine($"CursorPosition: {args.CursorPosition.X}; {args.CursorPosition.Y}");
                 Console.Out.WriteLine($"DirectionDelta: {args.DirectionDelta.X}; {args.DirectionDelta.Y}");
@@ -61,6 +71,7 @@ namespace Engine
 
             window.MouseButtonToggled += (_, args) =>
             {
+                Console.Out.WriteLine($"#{eventId++};=========================================================================");
                 Console.Out.WriteLine($"MouseButtonToggled: {args.TimeMs}ms");
                 Console.Out.WriteLine($"CursorPosition: {args.CursorPosition.X}; {args.CursorPosition.Y}");
                 Console.Out.WriteLine($"Button: {args.Button}");
@@ -69,6 +80,7 @@ namespace Engine
 
             window.MouseWheelScrolled += (_, args) =>
             {
+                Console.Out.WriteLine($"#{eventId++};=========================================================================");
                 Console.Out.WriteLine($"MouseWheelScrolled: {args.TimeMs}ms");
                 Console.Out.WriteLine($"CursorPosition: {args.CursorPosition.X}; {args.CursorPosition.Y}");
                 Console.Out.WriteLine($"VerticalScrollDelta: {args.VerticalScrollDelta}");
@@ -76,7 +88,35 @@ namespace Engine
                 Console.Out.WriteLine($"Buttons: {args.Buttons}");
             };
 
-            while(!window.IsClosed)
+            window.KeyboardKeyToggled += (_, args) =>
+            {
+                Console.Out.WriteLine($"#{eventId++};=========================================================================");
+                Console.Out.WriteLine($"KeyboardKeyToggled: {args.TimeMs}ms");
+                Console.Out.WriteLine($"ScanCode: {args.ScanCode:x}");
+                Console.Out.WriteLine($"Modifiers: {args.Modifiers}");
+                Console.Out.WriteLine($"IsPressed: {args.IsPressed}");
+                Console.Out.WriteLine($"RepeatCount: {args.RepeatCount}");
+                switch (args.Key)
+                {
+                    case SpecialKey specialKey:
+                        Console.Out.WriteLine($"SpecialKey: {specialKey}");
+                        break;
+                    case string keyName:
+                        Console.Out.WriteLine($"KeyName: {keyName}");
+                        break;
+                }
+            };
+
+            window.KeyboardTextInputted += (_, args) =>
+            {
+                //TODO: Check
+                //Console.Out.WriteLine($"#{eventId++};=========================================================================");
+                //Console.Out.WriteLine($"KeyboardTextInputted: {args.TimeMs}ms");
+                //Console.Out.WriteLine($"Modifiers: {args.Modifiers}");
+                //Console.Out.WriteLine($"Text: {args.Text}");
+            };
+
+            while (!window.IsClosed)
             {
                 subsystem.PollEvents();
             }

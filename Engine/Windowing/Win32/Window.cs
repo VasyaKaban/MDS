@@ -1,8 +1,11 @@
 ﻿using System.ComponentModel;
+using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Text;
 using Windows.Win32;
 using Windows.Win32.Foundation;
+using Windows.Win32.Graphics.Gdi;
 using Windows.Win32.UI.WindowsAndMessaging;
 
 namespace Engine.Windowing.Win32
@@ -10,7 +13,7 @@ namespace Engine.Windowing.Win32
     [SupportedOSPlatform("windows10.0")]
     internal class Window : IWindow
     {
-        private WindowExtent FromClientToWindowExtent(in WindowExtent extent, WINDOW_STYLE dwStyle, WINDOW_EX_STYLE dwExStyle)
+        private static WindowExtent FromClientToWindowExtent(in WindowExtent extent, WINDOW_STYLE dwStyle, WINDOW_EX_STYLE dwExStyle)
         {
             RECT rect = new RECT(0, 0, (int)extent.Width, (int)extent.Height);
             PInvoke.AdjustWindowRectEx(ref rect, dwStyle, (BOOL)0, dwExStyle);
@@ -24,6 +27,7 @@ namespace Engine.Windowing.Win32
             isTextInputEnabled = info.TextInputEnabled;
             previousMouseCursorPosition = new WindowPosition(0, 0);
             isClosed = false;
+            highSurrogate = '0';
 
             //State -> ignore
 
@@ -67,6 +71,45 @@ namespace Engine.Windowing.Win32
                 gcHandle.Free();
                 throw;
             }
+
+            hMonitor = PInvoke.MonitorFromWindow(hWnd, MONITOR_FROM_FLAGS.MONITOR_DEFAULTTONEAREST);
+
+            MONITORINFOEXW monitorInfoEx = new MONITORINFOEXW();
+            monitorInfoEx.monitorInfo.cbSize = (uint)Marshal.SizeOf<MONITORINFOEXW>();
+
+            PInvoke.GetMonitorInfo(hMonitor, ref monitorInfoEx.monitorInfo);
+
+            monitorDeviceName = monitorInfoEx.szDevice.ToString();
+
+            devModes = new(capacity: 32);
+
+            var devModesSet = new HashSet<VideoMode>(capacity: 32);
+            for (uint devModeIndex = 0; true; devModeIndex++)
+            {
+                DEVMODEW devMode = new DEVMODEW();
+                if (PInvoke.EnumDisplaySettingsEx(monitorDeviceName, (ENUM_DISPLAY_SETTINGS_MODE)devModeIndex, ref devMode, 0) != 0)
+                {
+                    if (!(devMode.dmFields.HasFlag(DEVMODE_FIELD_FLAGS.DM_BITSPERPEL) &&
+                        devMode.dmFields.HasFlag(DEVMODE_FIELD_FLAGS.DM_PELSWIDTH) &&
+                        devMode.dmFields.HasFlag(DEVMODE_FIELD_FLAGS.DM_PELSHEIGHT) &&
+                        devMode.dmFields.HasFlag(DEVMODE_FIELD_FLAGS.DM_DISPLAYFREQUENCY)))
+                    {
+                        continue;
+                    }
+
+                    if (devMode.dmBitsPerPel < 32)
+                        continue;
+
+                    if (devModesSet.Add(new VideoMode(devMode.dmPelsWidth, devMode.dmPelsHeight, devMode.dmDisplayFrequency)))
+                    {
+                        devModes.Add(new DevModeInfo { DevMode = devMode, Index = devModeIndex });
+                    }
+                }
+                else
+                    break;
+            }
+
+            devModes.Sort();
         }
 
         public IWindowSubsystem Subsystem => subsystem;
@@ -150,16 +193,32 @@ namespace Engine.Windowing.Win32
 
         public IEnumerable<VideoMode> GetAvailableDisplayVideoModes()
         {
-            throw new NotImplementedException();
+            foreach(var mode in devModes)
+                yield return new VideoMode(mode.DevMode.dmPelsWidth, mode.DevMode.dmPelsHeight, mode.DevMode.dmDisplayFrequency);
         }
 
         public VideoMode GetCurrentDisplayVideoMode()
         {
-            throw new NotImplementedException();
+            DEVMODEW devMode = new DEVMODEW();
+            PInvoke.EnumDisplaySettingsEx(monitorDeviceName, ENUM_DISPLAY_SETTINGS_MODE.ENUM_CURRENT_SETTINGS, ref devMode, 0);
+
+            return new VideoMode(devMode.dmPelsWidth, devMode.dmPelsHeight, devMode.dmDisplayFrequency);
         }
 
         public void SetDisplayVideoMode(VideoMode videoMode)
         {
+            int index = devModes.FindIndex((info) =>
+            {
+                return info.DevMode.dmPelsWidth == videoMode.Width &&
+                info.DevMode.dmPelsHeight == videoMode.Height &&
+                info.DevMode.dmDisplayFrequency == videoMode.RefreshRate;
+            });
+
+            unsafe
+            {
+                PInvoke.ChangeDisplaySettingsEx(monitorDeviceName, devModes[index].DevMode, CDS_TYPE.CDS_FULLSCREEN, null);
+            }
+
             throw new NotImplementedException();
         }
 
@@ -206,6 +265,21 @@ namespace Engine.Windowing.Win32
             }
         }
 
+        public string? AppendCharMessageCharacter(char c)
+        {
+            if (char.IsHighSurrogate(c))
+            {
+                highSurrogate = c;
+                return null;
+            }
+            else if (char.IsLowSurrogate(c))
+            {
+                return new string(highSurrogate, c);
+            }
+            else
+                return c.ToString();
+        }
+
         public event Action<IWindow, WindowClosedEventArgs>? Closed;
         public event Action<IWindow, WindowResizedEventArgs>? Resized;
         public event Action<IWindow, WindowMovedEventArgs>? Moved;
@@ -226,5 +300,13 @@ namespace Engine.Windowing.Win32
         private bool isClosed;
         private bool isMouseCaptured;
         private WindowPosition previousMouseCursorPosition;
+        private char highSurrogate;
+
+        private HMONITOR hMonitor;
+        private string monitorDeviceName;
+
+        private record struct DevModeInfo(DEVMODEW DevMode, uint Index);
+        
+        private List<DevModeInfo> devModes;
     }
 }

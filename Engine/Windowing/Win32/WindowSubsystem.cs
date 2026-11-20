@@ -20,23 +20,46 @@ namespace Engine.Windowing.Win32
             public WindowEventArgs args;
         }
 
-        private static MouseButton GetMouseButtonsFromWParam(WPARAM wParam)
+        private static MouseButtons GetMouseButtonsFromWParam(WPARAM wParam)
         {
             MODIFIERKEYS_FLAGS rawButtons = PInvoke.GET_KEYSTATE_WPARAM(wParam);
        
-            MouseButton buttons = MouseButton.None;
+            MouseButtons buttons = 0;
             if (rawButtons.HasFlag(MODIFIERKEYS_FLAGS.MK_LBUTTON))
-                buttons |= MouseButton.Left;
+                buttons |= MouseButtons.Left;
             if (rawButtons.HasFlag(MODIFIERKEYS_FLAGS.MK_RBUTTON))
-                buttons |= MouseButton.Right;
+                buttons |= MouseButtons.Right;
             if (rawButtons.HasFlag(MODIFIERKEYS_FLAGS.MK_MBUTTON))
-                buttons |= MouseButton.Middle;
+                buttons |= MouseButtons.Middle;
             if (rawButtons.HasFlag(MODIFIERKEYS_FLAGS.MK_XBUTTON1))
-                buttons |= MouseButton.X1;
+                buttons |= MouseButtons.X1;
             if (rawButtons.HasFlag(MODIFIERKEYS_FLAGS.MK_XBUTTON2))
-                buttons |= MouseButton.X2;
+                buttons |= MouseButtons.X2;
 
             return buttons;
+        }
+
+        private static KeyboardModifiers GetKeyboardModifiers()
+        {
+            KeyboardModifiers modifiers = 0;
+            if (PInvoke.GetAsyncKeyState((int)VIRTUAL_KEY.VK_LSHIFT) < 0)
+                modifiers |= KeyboardModifiers.LeftShift;
+            if (PInvoke.GetAsyncKeyState((int)VIRTUAL_KEY.VK_RSHIFT) < 0)
+                modifiers |= KeyboardModifiers.RightShift;
+            if (PInvoke.GetAsyncKeyState((int)VIRTUAL_KEY.VK_LCONTROL) < 0)
+                modifiers |= KeyboardModifiers.LeftControl;
+            if (PInvoke.GetAsyncKeyState((int)VIRTUAL_KEY.VK_RCONTROL) < 0)
+                modifiers |= KeyboardModifiers.RightControl;
+            if (PInvoke.GetAsyncKeyState((int)VIRTUAL_KEY.VK_LMENU) < 0)
+                modifiers |= KeyboardModifiers.LeftAlt;
+            if (PInvoke.GetAsyncKeyState((int)VIRTUAL_KEY.VK_RMENU) < 0)
+                modifiers |= KeyboardModifiers.RightAlt;
+            if (PInvoke.GetAsyncKeyState((int)VIRTUAL_KEY.VK_LWIN) < 0)
+                modifiers |= KeyboardModifiers.LeftGUI;
+            if (PInvoke.GetAsyncKeyState((int)VIRTUAL_KEY.VK_RWIN) < 0)
+                modifiers |= KeyboardModifiers.RightGUI;
+
+            return modifiers;
         }
 
         [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
@@ -86,7 +109,7 @@ namespace Engine.Windowing.Win32
                             if (PInvoke.GetActiveWindow() == hWnd)
                             {
                                 WindowPosition cursorPosition = new WindowPosition(PInvoke.GET_X_LPARAM(lParam), PInvoke.GET_Y_LPARAM(lParam));
-                                MouseButton buttons = GetMouseButtonsFromWParam(wParam);
+                                MouseButtons buttons = GetMouseButtonsFromWParam(wParam);
 
                                 if (!win.IsMouseCaptured)//emit focus gain
                                 {
@@ -134,7 +157,7 @@ namespace Engine.Windowing.Win32
                                     args = new WindowMouseButtonToggledEventArgs(
                                         timeMs,
                                         new WindowPosition(PInvoke.GET_X_LPARAM(lParam), PInvoke.GET_Y_LPARAM(lParam)),
-                                        MouseButton.Left,
+                                        MouseButtons.Left,
                                         (uint)(uMsg == PInvoke.WM_LBUTTONDBLCLK ? 2 : 1),
                                         uMsg != PInvoke.WM_LBUTTONUP)
                                 });
@@ -149,7 +172,7 @@ namespace Engine.Windowing.Win32
                                     args = new WindowMouseButtonToggledEventArgs(
                                         timeMs,
                                         new WindowPosition(PInvoke.GET_X_LPARAM(lParam), PInvoke.GET_Y_LPARAM(lParam)),
-                                        MouseButton.Right,
+                                        MouseButtons.Right,
                                         (uint)(uMsg == PInvoke.WM_RBUTTONDBLCLK ? 2 : 1),
                                         uMsg != PInvoke.WM_RBUTTONUP)
                                 });
@@ -164,7 +187,7 @@ namespace Engine.Windowing.Win32
                                     args = new WindowMouseButtonToggledEventArgs(
                                         timeMs,
                                         new WindowPosition(PInvoke.GET_X_LPARAM(lParam), PInvoke.GET_Y_LPARAM(lParam)),
-                                        MouseButton.Middle,
+                                        MouseButtons.Middle,
                                         (uint)(uMsg == PInvoke.WM_MBUTTONDBLCLK ? 2 : 1),
                                         uMsg != PInvoke.WM_MBUTTONUP)
                                 });
@@ -179,7 +202,7 @@ namespace Engine.Windowing.Win32
                                     args = new WindowMouseButtonToggledEventArgs(
                                         timeMs,
                                         new WindowPosition(PInvoke.GET_X_LPARAM(lParam), PInvoke.GET_Y_LPARAM(lParam)),
-                                        PInvoke.HIWORD((uint)wParam.Value) == PInvoke.XBUTTON1 ? MouseButton.X1 : MouseButton.X2,
+                                        PInvoke.HIWORD((uint)wParam.Value) == PInvoke.XBUTTON1 ? MouseButtons.X1 : MouseButtons.X2,
                                         (uint)(uMsg == PInvoke.WM_XBUTTONDBLCLK ? 2 : 1),
                                         uMsg != PInvoke.WM_XBUTTONUP)
                                 });
@@ -197,6 +220,80 @@ namespace Engine.Windowing.Win32
                                         (float)PInvoke.GET_WHEEL_DELTA_WPARAM(wParam) / PInvoke.WHEEL_DELTA)
                                 });
                             break;
+                        case PInvoke.WM_KEYDOWN:
+                        case PInvoke.WM_KEYUP:
+                        case PInvoke.WM_SYSKEYDOWN:
+                        case PInvoke.WM_SYSKEYUP:
+                            uint uLParam = (uint)lParam.Value;
+                            ushort repeatCount = PInvoke.LOWORD(uLParam);
+                            ushort rawScanCode = (byte)((uLParam >> 16) & 0xFF);
+                            if (((uLParam >> 24) & 0b1) == 1)//isExtended
+                                rawScanCode |= 0xE000;
+      
+                            bool isPressed = ((uLParam >> 31) & 0b1) == 0;
+
+                            VIRTUAL_KEY vk = (VIRTUAL_KEY)(wParam.Value & 0xFF);
+                            if (vk == VIRTUAL_KEY.VK_SHIFT || vk == VIRTUAL_KEY.VK_MENU || vk == VIRTUAL_KEY.VK_CONTROL)
+                                vk = (VIRTUAL_KEY)PInvoke.MapVirtualKeyEx(rawScanCode, MAP_VIRTUAL_KEY_TYPE.MAPVK_VSC_TO_VK_EX, HKL.Null);
+
+                            uint ps2ScanCode = 0;
+                            if(vk == VIRTUAL_KEY.VK_PAUSE && rawScanCode == 0x45)//set real Pause scan code
+                                ps2ScanCode = 0xE11D45;
+                            else if(vk == VIRTUAL_KEY.VK_NUMLOCK && rawScanCode == 0xE045)
+                                ps2ScanCode = 0x45;
+                            else
+                                ps2ScanCode = rawScanCode;
+
+                            KeyboardKey key;
+                            if(!subsystem.scanCodeToKeyMapping.TryGetValue(ps2ScanCode, out key))
+                            {
+                                string? vkName = subsystem.virtualKeyToNameMapping[(uint)vk];
+                                if (vkName != null)
+                                {
+                                    key = new KeyboardKey(vkName);
+                                    subsystem.scanCodeToKeyMapping.Add(ps2ScanCode, key);
+                                    subsystem.keyToScanCodeMapping.TryAdd(key, ps2ScanCode);
+                                }
+                                else
+                                {
+                                    key = new KeyboardKey(SpecialKey.Unknown);
+                                    subsystem.scanCodeToKeyMapping.Add(ps2ScanCode, key);
+                                }
+                            }
+
+                            subsystem.EnqueueEvent(
+                                new Event
+                                {
+                                    win = win,
+                                    args = new WindowKeyboardKeyToggledEventArgs(
+                                        timeMs,
+                                        ps2ScanCode,
+                                        GetKeyboardModifiers(),
+                                        key,
+                                        isPressed,
+                                        repeatCount)
+                                });
+                            break;
+                        case PInvoke.WM_CHAR:
+                            string? text = win.AppendCharMessageCharacter((char)wParam.Value);
+                            if (text != null)
+                            {
+                                subsystem.EnqueueEvent(
+                                    new Event
+                                    {
+                                        win = win,
+                                        args = new WindowKeyboardTextInputtedEventArgs(
+                                            timeMs,
+                                            GetKeyboardModifiers(),
+                                            text)
+                                    });
+                            }
+                            break;
+                        case PInvoke.WM_SYSCOMMAND:
+                            if((int)(wParam.Value & 0xFFF0) == PInvoke.SC_KEYMENU)
+                                returnDefault = false;
+                            break;
+                        //TODO: Handle WM_DISPLAYCHANGE
                     }
                 }
 
@@ -221,11 +318,31 @@ namespace Engine.Windowing.Win32
             if (layoutCount == 0)
                 throw new Win32Exception();
 
-            keyboardLayouts = new HKL[layoutCount];
+            Span<HKL> keyboardLayouts = stackalloc HKL[layoutCount];
             if(PInvoke.GetKeyboardLayoutList(keyboardLayouts) == 0)
                 throw new Win32Exception();
 
-            //fill mappings
+            virtualKeyToNameMapping = new string?[256];
+            foreach (HKL layout in keyboardLayouts)
+            {
+                for (int vk = 0; vk < 256; vk++)
+                {
+                    if (virtualKeyToNameMapping[vk] != null)
+                        continue;
+
+                    char name = (char)PInvoke.MapVirtualKeyEx((uint)vk, MAP_VIRTUAL_KEY_TYPE.MAPVK_VK_TO_CHAR, layout);
+                    if (char.IsSurrogate(name))
+                        continue;
+
+                    virtualKeyToNameMapping[vk] = name.ToString();
+                }
+            }
+
+            foreach(var (ps2ScanCode, key) in PS2Set1StableScanCodeMapping.MAPPING)
+            {
+                scanCodeToKeyMapping.Add(ps2ScanCode, key);
+                keyToScanCodeMapping.Add(key, ps2ScanCode);
+            }
 
             unsafe
             {
@@ -307,7 +424,7 @@ namespace Engine.Windowing.Win32
             return null;
         }
 
-        public void EnqueueEvent(Event winEvent)
+        private void EnqueueEvent(Event winEvent)
         {
             eventQueue.Enqueue(winEvent);
         }
@@ -315,7 +432,7 @@ namespace Engine.Windowing.Win32
         private HINSTANCE hInstance;
         private Queue<Event> eventQueue;
 
-        private HKL[] keyboardLayouts;
+        private string?[] virtualKeyToNameMapping;
         private Dictionary<uint, KeyboardKey> scanCodeToKeyMapping;
         private Dictionary<KeyboardKey, uint> keyToScanCodeMapping;
     }
