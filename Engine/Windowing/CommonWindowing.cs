@@ -36,6 +36,7 @@
     [Flags]
     public enum MouseButtons : uint
     {
+        None = 0,
         Left = 1 << 0,
         Right = 1 << 1,
         Middle = 1 << 2,
@@ -101,6 +102,7 @@
     [Flags]
     public enum KeyboardModifiers : uint
     {
+        None = 0,
         LeftShift = 1 << 0,
         RightShift = 1 << 1,
         LeftControl = 1 << 2,
