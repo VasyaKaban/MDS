@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel;
-using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Windows.Win32;
@@ -19,6 +18,7 @@ namespace Engine.Windowing.Win32
             isFullScreen = false;
             monitorDeviceName = "";
             devModes = new();
+            windowedModePlacement = new() { length = (uint)Marshal.SizeOf<WINDOWPLACEMENT>() };
 
             try
             {
@@ -307,16 +307,10 @@ namespace Engine.Windowing.Win32
             }
         }
 
-        public void UpdateWindowedModeSavedPosition(WindowPosition position)
-        {
-            if(!IsFullScreen)
-                windowedModeSavedPosition = position;
-        }
-
-        public void UpdateWindowedModeSavedExtent(WindowExtent extent)
+        public void UpdateWindowedModeState()
         {
             if (!IsFullScreen)
-                windowedModeSavedExtent = extent;
+                SaveWindowedModeState();
         }
 
         private static WindowExtent FromClientToWindowExtent(in WindowExtent extent, WINDOW_STYLE dwStyle, WINDOW_EX_STYLE dwExStyle)
@@ -329,19 +323,7 @@ namespace Engine.Windowing.Win32
 
         private void SaveWindowedModeState()
         {
-            //TODO: use GetWindowPlacement
-            throw new NotImplementedException();
-            unsafe
-            {
-                RECT clientRect = new RECT();
-                PInvoke.GetClientRect(hWnd, &clientRect);
-
-                Point point = new Point(0, 0);
-                PInvoke.ClientToScreen(hWnd, ref point);
-
-                windowedModeSavedPosition = new WindowPosition(point.X, point.Y);
-                windowedModeSavedExtent = new WindowExtent((uint)(clientRect.right - clientRect.left), (uint)(clientRect.bottom - clientRect.top));
-            }
+            PInvoke.GetWindowPlacement(hWnd, ref windowedModePlacement);
         }
 
         private void RestoreWindowedMode()
@@ -356,27 +338,14 @@ namespace Engine.Windowing.Win32
             style |= (nint)WINDOW_STYLE.WS_OVERLAPPEDWINDOW;
             PInvoke.SetWindowLongPtr(hWnd, WINDOW_LONG_PTR_INDEX.GWL_STYLE, style);
 
-            var winExtent = FromClientToWindowExtent(
-                        windowedModeSavedExtent,
-                        (WINDOW_STYLE)PInvoke.GetWindowLongPtr(hWnd, WINDOW_LONG_PTR_INDEX.GWL_STYLE),
-                        (WINDOW_EX_STYLE)PInvoke.GetWindowLongPtr(hWnd, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE));
-
-            //restore window position
-            //restore window extent
-            PInvoke.SetWindowPos(
-                hWnd,
-                HWND.HWND_NOTOPMOST,
-                windowedModeSavedPosition.X,
-                windowedModeSavedPosition.Y,
-                (int)winExtent.Width,
-                (int)winExtent.Height,
-                0);
-
             //set registry display mode
             unsafe
             {
                 PInvoke.ChangeDisplaySettingsEx(monitorDeviceName, devMode, 0, null);
             }
+
+            //restore placement
+            PInvoke.SetWindowPlacement(hWnd, windowedModePlacement);
 
             isFullScreen = false;
             SaveWindowedModeState();
@@ -412,8 +381,7 @@ namespace Engine.Windowing.Win32
         private record struct DevModeInfo(DEVMODEW DevMode, uint Index);
 
         private Dictionary<VideoMode, DevModeInfo> devModes;
-        private WindowPosition windowedModeSavedPosition;
-        private WindowExtent windowedModeSavedExtent;
+        private WINDOWPLACEMENT windowedModePlacement = new() { length = (uint)Marshal.SizeOf<WINDOWPLACEMENT>() };
         private bool isFullScreen;
     }
 }

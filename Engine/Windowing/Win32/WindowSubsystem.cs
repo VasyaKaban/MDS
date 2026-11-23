@@ -106,6 +106,12 @@ namespace Engine.Windowing.Win32
             return null;
         }
 
+        public bool IsKeyPressed(uint scanCode)
+        {
+            uint vk = PInvoke.MapVirtualKeyEx(scanCode, MAP_VIRTUAL_KEY_TYPE.MAPVK_VSC_TO_VK_EX, HKL.Null);
+            return PInvoke.GetAsyncKeyState((int)vk) < 0;
+        }
+
         public void PollEvents()
         {
             BOOL res;
@@ -229,7 +235,7 @@ namespace Engine.Windowing.Win32
                             var extent = new WindowExtent(width, height);
                             subsystem.EnqueueEvent(new Event { win = win, args = new WindowResizedEventArgs(timeMs, extent) });
 
-                            win.UpdateWindowedModeSavedExtent(extent);
+                            win.UpdateWindowedModeState();
                             break;
                         case PInvoke.WM_MOVE:
                             int x = PInvoke.GET_X_LPARAM(lParam);
@@ -238,7 +244,7 @@ namespace Engine.Windowing.Win32
                             var position = new WindowPosition(x, y);
                             subsystem.EnqueueEvent(new Event { win = win, args = new WindowMovedEventArgs(timeMs, position) });
 
-                            win.UpdateWindowedModeSavedPosition(position);
+                            win.UpdateWindowedModeState();
                             break;
                         case PInvoke.WM_MOUSEMOVE:
                             if (PInvoke.GetActiveWindow() == hWnd)

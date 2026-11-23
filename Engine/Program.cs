@@ -1,6 +1,4 @@
 ﻿using Engine.Windowing;
-using System.Runtime.InteropServices;
-using System.Text;
 
 namespace Engine
 {
@@ -98,10 +96,10 @@ namespace Engine
                 if (!args.IsPressed)
                     return;
 
-                if(args.Key is SpecialKey.Enter)
+                if (args.Key is SpecialKey.Enter)
                 {
                     var modes = win.GetAvailableDisplayVideoModes();
-                    foreach(var mode in modes)
+                    foreach (var mode in modes)
                     {
                         if (mode.Width >= 2560 && mode.Height >= 1440 && mode.RefreshRate > 90)
                         {
@@ -109,9 +107,9 @@ namespace Engine
                             break;
                         }
                     }
-                    
+
                 }
-                else if(args.Key is SpecialKey.BackSpace)
+                else if (args.Key is SpecialKey.BackSpace)
                 {
                     win.SetWindowedMode();
                 }

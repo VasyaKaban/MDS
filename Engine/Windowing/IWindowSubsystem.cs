@@ -1,6 +1,4 @@
-﻿using System.Runtime.InteropServices;
-
-namespace Engine.Windowing
+﻿namespace Engine.Windowing
 {
     public interface IWindowSubsystem : IDisposable
     {
@@ -11,6 +9,8 @@ namespace Engine.Windowing
         KeyboardKey? ScanCodeToKey(uint scanCode);
 
         uint? KeyToScanCode(KeyboardKey key);
+
+        bool IsKeyPressed(uint scanCode);
 
         static IWindowSubsystem CreateSubsystem()
         {
