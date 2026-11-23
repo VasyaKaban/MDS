@@ -14,7 +14,133 @@ namespace Engine.Windowing.Win32
     [SupportedOSPlatform("windows10.0")]
     internal sealed class WindowSubsystem : IWindowSubsystem
     {
-        public struct Event
+        public const string WINDOW_CLASS_NAME = "WINDOW_CLASS";
+
+        public HINSTANCE Instance { get => hInstance; }
+
+        public WindowSubsystem()
+        {
+            hInstance = PInvoke.GetModuleHandle((PCWSTR)null);
+            eventQueue = new();
+            scanCodeToKeyMapping = new();
+            keyToScanCodeMapping = new();
+
+            int layoutCount = PInvoke.GetKeyboardLayoutList(Span<HKL>.Empty);
+            if (layoutCount == 0)
+                throw new Win32Exception();
+
+            Span<HKL> keyboardLayouts = stackalloc HKL[layoutCount];
+            if (PInvoke.GetKeyboardLayoutList(keyboardLayouts) == 0)
+                throw new Win32Exception();
+
+            virtualKeyToNameMapping = new string?[256];
+            foreach (HKL layout in keyboardLayouts)
+            {
+                for (int vk = 0; vk < 256; vk++)
+                {
+                    if (virtualKeyToNameMapping[vk] != null)
+                        continue;
+
+                    char name = (char)PInvoke.MapVirtualKeyEx((uint)vk, MAP_VIRTUAL_KEY_TYPE.MAPVK_VK_TO_CHAR, layout);
+                    if (char.IsSurrogate(name))
+                        continue;
+
+                    virtualKeyToNameMapping[vk] = name.ToString();
+                }
+            }
+
+            foreach (var (ps2ScanCode, key) in PS2Set1StableScanCodeMapping.MAPPING)
+            {
+                scanCodeToKeyMapping.Add(ps2ScanCode, key);
+                keyToScanCodeMapping.Add(key, ps2ScanCode);
+            }
+
+            unsafe
+            {
+                fixed (char* lpszClassName = WINDOW_CLASS_NAME)
+                {
+                    var wndClassEx = new WNDCLASSEXW
+                    {
+                        cbSize = (uint)Marshal.SizeOf<WNDCLASSEXW>(),
+                        style = WNDCLASS_STYLES.CS_VREDRAW | WNDCLASS_STYLES.CS_HREDRAW | WNDCLASS_STYLES.CS_DBLCLKS | WNDCLASS_STYLES.CS_OWNDC,
+                        lpfnWndProc = &WindowProc,
+                        cbClsExtra = 0,
+                        cbWndExtra = 0,
+                        hInstance = hInstance,
+                        hIcon = HICON.Null,
+                        hCursor = HCURSOR.Null,
+                        hbrBackground = HBRUSH.Null,
+                        lpszMenuName = null,
+                        lpszClassName = lpszClassName
+                    };
+
+                    var wndClassAtom = PInvoke.RegisterClassEx(wndClassEx);
+                    if (wndClassAtom == 0)
+                        throw new Win32Exception();
+                }
+            }
+        }
+
+        public IWindow CreateWindow(in WindowCreateInfo info)
+        {
+            Window win = new Window(this, info);
+            return win;
+        }
+
+        public void Dispose()
+        {
+            unsafe
+            {
+                fixed (char* lpClassName = WINDOW_CLASS_NAME)
+                {
+                    PInvoke.UnregisterClass(lpClassName, hInstance);
+                }
+            }
+        }
+
+        public uint? KeyToScanCode(KeyboardKey key)
+        {
+            if (keyToScanCodeMapping.TryGetValue(key, out uint value))
+                return value;
+
+            return null;
+        }
+
+        public void PollEvents()
+        {
+            BOOL res;
+            while ((res = PInvoke.PeekMessage(out MSG msg, HWND.Null, 0, 0, PEEK_MESSAGE_REMOVE_TYPE.PM_REMOVE)) != 0)
+            {
+                if (res == -1)
+                    throw new Win32Exception();
+                else
+                {
+                    PInvoke.DispatchMessage(in msg);
+                    PInvoke.TranslateMessage(in msg);
+                }
+            }
+
+            while (eventQueue.Count > 0)
+            {
+                Event winEvent = eventQueue.Dequeue();
+                winEvent.win.HandleEvent(winEvent.args);
+            }
+        }
+
+        public KeyboardKey? ScanCodeToKey(uint scanCode)
+        {
+            if (scanCodeToKeyMapping.TryGetValue(scanCode, out KeyboardKey value))
+                return value;
+
+            return null;
+        }
+
+        private void EnqueueEvent(Event winEvent)
+        {
+            eventQueue.Enqueue(winEvent);
+        }
+
+        private struct Event
         {
             public Window win;
             public WindowEventArgs args;
@@ -73,7 +199,8 @@ namespace Engine.Windowing.Win32
 
                     Marshal.SetLastPInvokeError(0);
                     CREATESTRUCTW* createStruct = (CREATESTRUCTW*)lParam.Value;
-                    if (PInvoke.SetWindowLongPtr(hWnd, WINDOW_LONG_PTR_INDEX.GWLP_USERDATA, (nint)createStruct->lpCreateParams) == 0 && Marshal.GetLastPInvokeError() != 0)
+                    if (PInvoke.SetWindowLongPtr(hWnd, WINDOW_LONG_PTR_INDEX.GWLP_USERDATA, (nint)createStruct->lpCreateParams) == 0 &&
+                        Marshal.GetLastPInvokeError() != 0)
                         return (LRESULT)(-1);
                 }
             }
@@ -130,22 +257,21 @@ namespace Engine.Windowing.Win32
                                     };
                                     PInvoke.TrackMouseEvent(ref eventTrack);
 
-                                    win.IsMouseCaptured = true;
-                                    win.PreviousMouseCursorPosition = cursorPosition;
+                                    win.CaptureMouse(cursorPosition);
 
                                     subsystem.EnqueueEvent(new Event { win = win, args = new WindowMouseFocusGainedEventArgs(timeMs, cursorPosition, buttons) });
                                 }
                                 else
                                 {
-                                    WindowPosition deltaPosition = new WindowPosition(cursorPosition.X - win.PreviousMouseCursorPosition.X, cursorPosition.Y - win.PreviousMouseCursorPosition.Y);
-                                    win.PreviousMouseCursorPosition = cursorPosition;
+                                    WindowPosition deltaPosition = new WindowPosition(cursorPosition.X - win.MouseCursorPosition.X, cursorPosition.Y - win.MouseCursorPosition.Y);
+                                    win.CaptureMouse(cursorPosition);
 
                                     subsystem.EnqueueEvent(new Event { win = win, args = new WindowMouseCursorMovedEventArgs(timeMs, cursorPosition, deltaPosition, buttons) });
                                 }
                             }
                             break;
                         case PInvoke.WM_MOUSELEAVE:
-                            win.IsMouseCaptured = false;
+                            win.UncaptureMouse();
 
                             subsystem.EnqueueEvent(new Event { win = win, args = new WindowMouseFocusLeftEventArgs(timeMs) });
                             break;
@@ -320,132 +446,6 @@ namespace Engine.Windowing.Win32
             }
 
             return (LRESULT)0;
-        }
-
-        public const string WINDOW_CLASS_NAME = "WINDOW_CLASS";
-
-        public HINSTANCE Instance { get => hInstance; }
-
-        public WindowSubsystem()
-        {
-            hInstance = PInvoke.GetModuleHandle((PCWSTR)null);
-            eventQueue = new();
-            scanCodeToKeyMapping = new();
-            keyToScanCodeMapping = new();
-
-            int layoutCount = PInvoke.GetKeyboardLayoutList(Span<HKL>.Empty);
-            if (layoutCount == 0)
-                throw new Win32Exception();
-
-            Span<HKL> keyboardLayouts = stackalloc HKL[layoutCount];
-            if (PInvoke.GetKeyboardLayoutList(keyboardLayouts) == 0)
-                throw new Win32Exception();
-
-            virtualKeyToNameMapping = new string?[256];
-            foreach (HKL layout in keyboardLayouts)
-            {
-                for (int vk = 0; vk < 256; vk++)
-                {
-                    if (virtualKeyToNameMapping[vk] != null)
-                        continue;
-
-                    char name = (char)PInvoke.MapVirtualKeyEx((uint)vk, MAP_VIRTUAL_KEY_TYPE.MAPVK_VK_TO_CHAR, layout);
-                    if (char.IsSurrogate(name))
-                        continue;
-
-                    virtualKeyToNameMapping[vk] = name.ToString();
-                }
-            }
-
-            foreach (var (ps2ScanCode, key) in PS2Set1StableScanCodeMapping.MAPPING)
-            {
-                scanCodeToKeyMapping.Add(ps2ScanCode, key);
-                keyToScanCodeMapping.Add(key, ps2ScanCode);
-            }
-
-            unsafe
-            {
-                fixed (char* lpszClassName = WINDOW_CLASS_NAME)
-                {
-                    var wndClassEx = new WNDCLASSEXW
-                    {
-                        cbSize = (uint)Marshal.SizeOf<WNDCLASSEXW>(),
-                        style = WNDCLASS_STYLES.CS_VREDRAW | WNDCLASS_STYLES.CS_HREDRAW | WNDCLASS_STYLES.CS_DBLCLKS | WNDCLASS_STYLES.CS_OWNDC,
-                        lpfnWndProc = &WindowProc,
-                        cbClsExtra = 0,
-                        cbWndExtra = 0,
-                        hInstance = hInstance,
-                        hIcon = HICON.Null,
-                        hCursor = HCURSOR.Null,
-                        hbrBackground = HBRUSH.Null,
-                        lpszMenuName = null,
-                        lpszClassName = lpszClassName
-                    };
-
-                    var wndClassAtom = PInvoke.RegisterClassEx(wndClassEx);
-                    if (wndClassAtom == 0)
-                        throw new Win32Exception();
-                }
-            }
-        }
-
-        public IWindow CreateWindow(in WindowCreateInfo info)
-        {
-            Window win = new Window(this, info);
-            return win;
-        }
-
-        public void Dispose()
-        {
-            unsafe
-            {
-                fixed (char* lpClassName = WINDOW_CLASS_NAME)
-                {
-                    PInvoke.UnregisterClass(lpClassName, hInstance);
-                }
-            }
-        }
-
-        public uint? KeyToScanCode(KeyboardKey key)
-        {
-            if (keyToScanCodeMapping.TryGetValue(key, out uint value))
-                return value;
-
-            return null;
-        }
-
-        public void PollEvents()
-        {
-            BOOL res;
-            while ((res = PInvoke.PeekMessage(out MSG msg, HWND.Null, 0, 0, PEEK_MESSAGE_REMOVE_TYPE.PM_REMOVE)) != 0)
-            {
-                if (res == -1)
-                    throw new Win32Exception();
-                else
-                {
-                    PInvoke.DispatchMessage(in msg);
-                    PInvoke.TranslateMessage(in msg);
-                }
-            }
-
-            while (eventQueue.Count > 0)
-            {
-                Event winEvent = eventQueue.Dequeue();
-                winEvent.win.HandleEvent(winEvent.args);
-            }
-        }
-
-        public KeyboardKey? ScanCodeToKey(uint scanCode)
-        {
-            if (scanCodeToKeyMapping.TryGetValue(scanCode, out KeyboardKey value))
-                return value;
-
-            return null;
-        }
-
-        private void EnqueueEvent(Event winEvent)
-        {
-            eventQueue.Enqueue(winEvent);
         }
 
         private HINSTANCE hInstance;

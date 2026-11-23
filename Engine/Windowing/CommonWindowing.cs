@@ -14,41 +14,23 @@
         public bool TextInputEnabled { get; set; }
     }
 
-    public closed class WindowEventArgs
+    public closed class WindowEventArgs(ulong timeMs)
     {
-        protected WindowEventArgs(ulong timeMs)
-        {
-            TimeMs = timeMs;
-        }
-
-        public ulong TimeMs { get; }
+        public ulong TimeMs { get; } = timeMs;
     }
 
-    public class WindowClosedEventArgs : WindowEventArgs
+    public class WindowClosedEventArgs(ulong timeMs) : WindowEventArgs(timeMs)
     {
-        public WindowClosedEventArgs(ulong timeMs) : base(timeMs)
-        {
-        }
     }
 
-    public class WindowResizedEventArgs : WindowEventArgs
+    public class WindowResizedEventArgs(ulong timeMs, WindowExtent extent) : WindowEventArgs(timeMs)
     {
-        public WindowResizedEventArgs(ulong timeMs, WindowExtent extent) : base(timeMs)
-        {
-            Extent = extent;
-        }
-
-        public WindowExtent Extent { get; }
+        public WindowExtent Extent { get; } = extent;
     }
 
-    public class WindowMovedEventArgs : WindowEventArgs
+    public class WindowMovedEventArgs(ulong timeMs, WindowPosition position) : WindowEventArgs(timeMs)
     {
-        public WindowMovedEventArgs(ulong timeMs, WindowPosition position) : base(timeMs)
-        {
-            Position = position;
-        }
-
-        public WindowPosition Position { get; }
+        public WindowPosition Position { get; } = position;
     }
 
     [Flags]
@@ -61,83 +43,59 @@
         X2 = 1 << 4
     }
 
-    public class WindowMouseFocusGainedEventArgs : WindowEventArgs
+    public class WindowMouseFocusGainedEventArgs(ulong timeMs, WindowPosition cursorPosition, MouseButtons buttons) : WindowEventArgs(timeMs)
     {
-        public WindowMouseFocusGainedEventArgs(ulong timeMs, WindowPosition cursorPosition, MouseButtons buttons) : base(timeMs)
-        {
-            CursorPosition = cursorPosition;
-            Buttons = buttons;
-        }
-
-        public WindowPosition CursorPosition { get; }//relative to the current window
-        public MouseButtons Buttons { get; }
+        public WindowPosition CursorPosition { get; } = cursorPosition;
+        public MouseButtons Buttons { get; } = buttons;
     }
 
-    public class WindowMouseFocusLeftEventArgs : WindowEventArgs
+    public class WindowMouseFocusLeftEventArgs(ulong timeMs) : WindowEventArgs(timeMs)
     {
-        public WindowMouseFocusLeftEventArgs(ulong timeMs) : base(timeMs)
-        {
-        }
     }
 
-    public class WindowKeyboardFocusGainedEventArgs : WindowEventArgs
+    public class WindowKeyboardFocusGainedEventArgs(ulong timeMs) : WindowEventArgs(timeMs)
     {
-        public WindowKeyboardFocusGainedEventArgs(ulong timeMs) : base(timeMs)
-        {
-        }
     }
 
-    public class WindowKeyboardFocusLeftEventArgs : WindowEventArgs
+    public class WindowKeyboardFocusLeftEventArgs(ulong timeMs) : WindowEventArgs(timeMs)
     {
-        public WindowKeyboardFocusLeftEventArgs(ulong timeMs) : base(timeMs)
-        {
-        }
     }
 
-    public class WindowMouseCursorMovedEventArgs : WindowEventArgs
+    public class WindowMouseCursorMovedEventArgs(
+        ulong timeMs,
+        WindowPosition cursorPosition,
+        WindowPosition directionDelta,
+        MouseButtons buttons) : WindowEventArgs(timeMs)
     {
-        public WindowMouseCursorMovedEventArgs(ulong timeMs, WindowPosition cursorPosition, WindowPosition directionDelta, MouseButtons buttons) : base(timeMs)
-        {
-            CursorPosition = cursorPosition;
-            DirectionDelta = directionDelta;
-            Buttons = buttons;
-        }
-
-        public WindowPosition CursorPosition { get; }//relative to the current window
-        public WindowPosition DirectionDelta { get; }//delta between previous position and current
-        public MouseButtons Buttons { get; }
+        public WindowPosition CursorPosition { get; } = cursorPosition;
+        public WindowPosition DirectionDelta { get; } = directionDelta;
+        public MouseButtons Buttons { get; } = buttons;
     }
 
-    public class WindowMouseButtonToggledEventArgs : WindowEventArgs
+    public class WindowMouseButtonToggledEventArgs(
+        ulong timeMs,
+        WindowPosition cursorPosition,
+        MouseButtons button,
+        uint clicks,
+        bool isPressed) : WindowEventArgs(timeMs)
     {
-        public WindowMouseButtonToggledEventArgs(ulong timeMs, WindowPosition cursorPosition, MouseButtons button, uint clicks, bool isPressed) : base(timeMs)
-        {
-            CursorPosition = cursorPosition;
-            Button = button;
-            Clicks = clicks;
-            IsPressed = isPressed;
-        }
-
-        public WindowPosition CursorPosition { get; }//relative to the current window
-        public MouseButtons Button { get; }
-        public uint Clicks { get; }
-        public bool IsPressed { get; }
+        public WindowPosition CursorPosition { get; } = cursorPosition;
+        public MouseButtons Button { get; } = button;
+        public uint Clicks { get; } = clicks;
+        public bool IsPressed { get; } = isPressed;
     }
 
-    public class WindowMouseWheelScrolledEventArgs : WindowEventArgs
+    public class WindowMouseWheelScrolledEventArgs(
+        ulong timeMs,
+        WindowPosition cursorPosition,
+        MouseButtons buttons,
+        float horizontalScrollDelta,
+        float verticalScrollDelta) : WindowEventArgs(timeMs)
     {
-        public WindowMouseWheelScrolledEventArgs(ulong timeMs, WindowPosition cursorPosition, MouseButtons buttons, float horizontalScrollDelta, float verticalScrollDelta) : base(timeMs)
-        {
-            CursorPosition = cursorPosition;
-            Buttons = buttons;
-            HorizontalScrollDelta = horizontalScrollDelta;
-            VerticalScrollDelta = verticalScrollDelta;
-        }
-
-        public WindowPosition CursorPosition { get; }//relative to the current window
-        public MouseButtons Buttons { get; }
-        public float HorizontalScrollDelta { get; }
-        public float VerticalScrollDelta { get; }
+        public WindowPosition CursorPosition { get; } = cursorPosition;
+        public MouseButtons Buttons { get; } = buttons;
+        public float HorizontalScrollDelta { get; } = horizontalScrollDelta;
+        public float VerticalScrollDelta { get; } = verticalScrollDelta;
     }
 
     [Flags]
@@ -263,42 +221,30 @@
 
     public union KeyboardKey(SpecialKey, string);//either predefined key or key name based on available keyboard layouts
 
-    public class WindowKeyboardKeyToggledEventArgs : WindowEventArgs
+    public class WindowKeyboardKeyToggledEventArgs(
+        ulong timeMs,
+        uint scanCode,
+        KeyboardModifiers modifiers,
+        KeyboardKey key,
+        bool isPressed,
+        uint repeatCount) : WindowEventArgs(timeMs)
     {
-        public WindowKeyboardKeyToggledEventArgs(ulong timeMs, uint scanCode, KeyboardModifiers modifiers, KeyboardKey key, bool isPressed, uint repeatCount) : base(timeMs)
-        {
-            ScanCode = scanCode;
-            Modifiers = modifiers;
-            Key = key;
-            IsPressed = isPressed;
-            RepeatCount = repeatCount;
-        }
-
-        public uint ScanCode { get; }
-        public KeyboardModifiers Modifiers { get; }
-        public KeyboardKey Key { get; }
-        public bool IsPressed { get; }
-        public uint RepeatCount { get; }
+        public uint ScanCode { get; } = scanCode;
+        public KeyboardModifiers Modifiers { get; } = modifiers;
+        public KeyboardKey Key { get; } = key;
+        public bool IsPressed { get; } = isPressed;
+        public uint RepeatCount { get; } = repeatCount;
     }
 
-    public class WindowKeyboardTextInputtedEventArgs : WindowEventArgs
+    public class WindowKeyboardTextInputtedEventArgs(ulong timeMs, KeyboardModifiers modifiers, string text) : WindowEventArgs(timeMs)
     {
-        public WindowKeyboardTextInputtedEventArgs(ulong timeMs, KeyboardModifiers modifiers, string text) : base(timeMs)
-        {
-            Modifiers = modifiers;
-            Text = text;
-        }
-
-        public KeyboardModifiers Modifiers { get; }
-        public string Text { get; }
+        public KeyboardModifiers Modifiers { get; } = modifiers;
+        public string Text { get; } = text;
     }
 
     public record VideoMode(uint Width, uint Height, uint RefreshRate);
 
-    public class WindowDisplayChangedEventArgs : WindowEventArgs
+    public class WindowDisplayChangedEventArgs(ulong timeMs) : WindowEventArgs(timeMs)
     {
-        public WindowDisplayChangedEventArgs(ulong timeMs) : base(timeMs)
-        {
-        }
     }
 }

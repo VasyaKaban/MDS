@@ -12,67 +12,13 @@ namespace Engine.Windowing.Win32
     [SupportedOSPlatform("windows10.0")]
     internal sealed class Window : IWindow
     {
-        private static WindowExtent FromClientToWindowExtent(in WindowExtent extent, WINDOW_STYLE dwStyle, WINDOW_EX_STYLE dwExStyle)
-        {
-            RECT rect = new RECT(0, 0, (int)extent.Width, (int)extent.Height);
-            PInvoke.AdjustWindowRectEx(ref rect, dwStyle, (BOOL)0, dwExStyle);
-
-            return new WindowExtent((uint)(rect.right - rect.left), (uint)(rect.bottom - rect.top));
-        }
-
-        private void SaveWindowedModeState()
-        {
-            unsafe
-            {
-                RECT clientRect = new RECT();
-                PInvoke.GetClientRect(hWnd, &clientRect);
-
-                Point point = new Point(0, 0);
-                PInvoke.ClientToScreen(hWnd, ref point);
-
-                windowedModeSavedPosition = new WindowPosition(point.X, point.Y);
-                windowedModeSavedExtent = new WindowExtent((uint)(clientRect.right - clientRect.left), (uint)(clientRect.bottom - clientRect.top));
-            }
-        }
-
-        private void RestoreWindowedMode()
-        {
-            DEVMODEW devMode = new DEVMODEW { dmSize = (ushort)Marshal.SizeOf<DEVMODEW>() };
-            
-            //get registry display mode
-            PInvoke.EnumDisplaySettingsEx(monitorDeviceName, ENUM_DISPLAY_SETTINGS_MODE.ENUM_REGISTRY_SETTINGS, ref devMode, 0);
-
-            //restore window styles
-            var style = PInvoke.GetWindowLongPtr(hWnd, WINDOW_LONG_PTR_INDEX.GWL_STYLE);
-            style |= (nint)WINDOW_STYLE.WS_OVERLAPPEDWINDOW;
-            PInvoke.SetWindowLongPtr(hWnd, WINDOW_LONG_PTR_INDEX.GWL_STYLE, style);
-
-            //restore window position
-            //restore window extent
-            PInvoke.SetWindowPos(
-                hWnd,
-                HWND.HWND_NOTOPMOST,
-                windowedModeSavedPosition.X,
-                windowedModeSavedPosition.Y,
-                (int)windowedModeSavedExtent.Width,
-                (int)windowedModeSavedExtent.Height,
-                0);
-
-            //set registry display mode
-            unsafe
-            {
-                PInvoke.ChangeDisplaySettingsEx(monitorDeviceName, devMode, 0, null);
-            }
-
-            isFullScreen = false;
-            SaveWindowedModeState();
-        }
-
         public Window(WindowSubsystem subsystem, in WindowCreateInfo info)
         {
             this.subsystem = subsystem;
             isTextInputEnabled = info.TextInputEnabled;
             isFullScreen = false;
+            monitorDeviceName = "";
+            devModes = new();
 
             try
             {
@@ -85,7 +31,7 @@ namespace Engine.Windowing.Win32
                         WINDOW_STYLE dwStyle = WINDOW_STYLE.WS_OVERLAPPEDWINDOW | WINDOW_STYLE.WS_VISIBLE;
                         WINDOW_EX_STYLE dwExStyle = 0;
 
-                        var winPos = FromClientToWindowExtent(info.Extent, dwStyle, dwExStyle);
+                        var winExtent = FromClientToWindowExtent(info.Extent, dwStyle, dwExStyle);
 
                         RECT rect = new RECT(0, 0, (int)info.Extent.Width, (int)info.Extent.Height);
                         PInvoke.AdjustWindowRectEx(ref rect, dwStyle, (BOOL)0, dwExStyle);
@@ -97,8 +43,8 @@ namespace Engine.Windowing.Win32
                             dwStyle,
                             PInvoke.CW_USEDEFAULT,
                             PInvoke.CW_USEDEFAULT,
-                            (int)winPos.Width,
-                            (int)winPos.Height,
+                            (int)winExtent.Width,
+                            (int)winExtent.Height,
                             HWND.Null,
                             HMENU.Null,
                             subsystem.Instance,
@@ -127,20 +73,12 @@ namespace Engine.Windowing.Win32
         {
             get
             {
-                Marshal.SetLastPInvokeError(0);//clear last error
                 int bufferLength = PInvoke.GetWindowTextLength(hWnd);
-                if (bufferLength == 0)//may be an error
-                {
-                    if (Marshal.GetLastPInvokeError() != 0)
-                        throw new Win32Exception();
-
+                if (bufferLength == 0)
                     return "";
-                }
 
                 Span<char> title = stackalloc char[bufferLength + 1];
                 int titleLength = PInvoke.GetWindowText(hWnd, title);
-                if (titleLength == 0)
-                    throw new Win32Exception();
 
                 return title.Slice(0, titleLength).ToString();
             }
@@ -150,8 +88,7 @@ namespace Engine.Windowing.Win32
                 {
                     fixed (char* lpString = value)
                     {
-                        if (PInvoke.SetWindowText(hWnd, lpString) == 0)
-                            throw new Win32Exception();
+                        PInvoke.SetWindowText(hWnd, lpString);
                     }
                 }
             }
@@ -161,8 +98,7 @@ namespace Engine.Windowing.Win32
         {
             get
             {
-                if (PInvoke.GetClientRect(hWnd, out RECT rect) == 0)
-                    throw new Win32Exception();
+                PInvoke.GetClientRect(hWnd, out RECT rect);
 
                 return new WindowExtent((uint)rect.right, (uint)rect.bottom);
             }
@@ -174,22 +110,19 @@ namespace Engine.Windowing.Win32
                 }
                 else
                 {
-                    var winPos = FromClientToWindowExtent(
+                    var winExtent = FromClientToWindowExtent(
                         value,
                         (WINDOW_STYLE)PInvoke.GetWindowLongPtr(hWnd, WINDOW_LONG_PTR_INDEX.GWL_STYLE),
                         (WINDOW_EX_STYLE)PInvoke.GetWindowLongPtr(hWnd, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE));
 
-                    BOOL res = PInvoke.SetWindowPos(
+                    PInvoke.SetWindowPos(
                         hWnd,
                         HWND.Null,
                         0,
                         0,
-                        (int)winPos.Width,
-                        (int)winPos.Height,
+                        (int)winExtent.Width,
+                        (int)winExtent.Height,
                         SET_WINDOW_POS_FLAGS.SWP_NOMOVE | SET_WINDOW_POS_FLAGS.SWP_NOACTIVATE | SET_WINDOW_POS_FLAGS.SWP_NOZORDER);
-
-                    if (res == 0)
-                        throw new Win32Exception();
                 }
 
                 SaveWindowedModeState();
@@ -200,10 +133,6 @@ namespace Engine.Windowing.Win32
 
         public bool IsTextInputEnabled { get => isTextInputEnabled; set => isTextInputEnabled = value; }
         public bool IsClosed { get => isClosed; set => isClosed = value; }
-
-        public HWND Handle { get => hWnd; }
-        public bool IsMouseCaptured { get => isMouseCaptured; set => isMouseCaptured = value; }
-        public WindowPosition PreviousMouseCursorPosition { get => previousMouseCursorPosition; set => previousMouseCursorPosition = value; }
 
         public void Dispose()
         {
@@ -262,6 +191,20 @@ namespace Engine.Windowing.Win32
         {
             if (IsFullScreen)
                 RestoreWindowedMode();
+        }
+
+        public bool IsMouseCaptured { get => isMouseCaptured; }
+        public WindowPosition MouseCursorPosition { get => previousMouseCursorPosition; }
+
+        public void CaptureMouse(in WindowPosition cursorPosition)
+        {
+            isMouseCaptured = true;
+            previousMouseCursorPosition = cursorPosition;
+        }
+
+        public void UncaptureMouse()
+        {
+            isMouseCaptured = false;
         }
 
         public void HandleEvent(WindowEventArgs eventArgs)
@@ -376,6 +319,70 @@ namespace Engine.Windowing.Win32
                 windowedModeSavedExtent = extent;
         }
 
+        private static WindowExtent FromClientToWindowExtent(in WindowExtent extent, WINDOW_STYLE dwStyle, WINDOW_EX_STYLE dwExStyle)
+        {
+            RECT rect = new RECT(0, 0, (int)extent.Width, (int)extent.Height);
+            PInvoke.AdjustWindowRectEx(ref rect, dwStyle, (BOOL)0, dwExStyle);
+
+            return new WindowExtent((uint)(rect.right - rect.left), (uint)(rect.bottom - rect.top));
+        }
+
+        private void SaveWindowedModeState()
+        {
+            //TODO: use GetWindowPlacement
+            throw new NotImplementedException();
+            unsafe
+            {
+                RECT clientRect = new RECT();
+                PInvoke.GetClientRect(hWnd, &clientRect);
+
+                Point point = new Point(0, 0);
+                PInvoke.ClientToScreen(hWnd, ref point);
+
+                windowedModeSavedPosition = new WindowPosition(point.X, point.Y);
+                windowedModeSavedExtent = new WindowExtent((uint)(clientRect.right - clientRect.left), (uint)(clientRect.bottom - clientRect.top));
+            }
+        }
+
+        private void RestoreWindowedMode()
+        {
+            DEVMODEW devMode = new DEVMODEW { dmSize = (ushort)Marshal.SizeOf<DEVMODEW>() };
+
+            //get registry display mode
+            PInvoke.EnumDisplaySettingsEx(monitorDeviceName, ENUM_DISPLAY_SETTINGS_MODE.ENUM_REGISTRY_SETTINGS, ref devMode, 0);
+
+            //restore window styles
+            var style = PInvoke.GetWindowLongPtr(hWnd, WINDOW_LONG_PTR_INDEX.GWL_STYLE);
+            style |= (nint)WINDOW_STYLE.WS_OVERLAPPEDWINDOW;
+            PInvoke.SetWindowLongPtr(hWnd, WINDOW_LONG_PTR_INDEX.GWL_STYLE, style);
+
+            var winExtent = FromClientToWindowExtent(
+                        windowedModeSavedExtent,
+                        (WINDOW_STYLE)PInvoke.GetWindowLongPtr(hWnd, WINDOW_LONG_PTR_INDEX.GWL_STYLE),
+                        (WINDOW_EX_STYLE)PInvoke.GetWindowLongPtr(hWnd, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE));
+
+            //restore window position
+            //restore window extent
+            PInvoke.SetWindowPos(
+                hWnd,
+                HWND.HWND_NOTOPMOST,
+                windowedModeSavedPosition.X,
+                windowedModeSavedPosition.Y,
+                (int)winExtent.Width,
+                (int)winExtent.Height,
+                0);
+
+            //set registry display mode
+            unsafe
+            {
+                PInvoke.ChangeDisplaySettingsEx(monitorDeviceName, devMode, 0, null);
+            }
+
+            isFullScreen = false;
+            SaveWindowedModeState();
+        }
+
+
         public event Action<IWindow, WindowClosedEventArgs>? Closed;
         public event Action<IWindow, WindowResizedEventArgs>? Resized;
         public event Action<IWindow, WindowMovedEventArgs>? Moved;
@@ -390,21 +397,21 @@ namespace Engine.Windowing.Win32
         public event Action<IWindow, WindowKeyboardTextInputtedEventArgs>? KeyboardTextInputted;
         public event Action<IWindow, WindowDisplayChangedEventArgs>? DisplayChanged;
 
-        private GCHandle gcHandle = new();
-        private HWND hWnd = new();
+        private GCHandle gcHandle;
+        private HWND hWnd;
         private WindowSubsystem subsystem;
-        private bool isTextInputEnabled = false;
-        private bool isClosed = false;
-        private bool isMouseCaptured = false;
-        private WindowPosition previousMouseCursorPosition = new(0, 0);
-        private char highSurrogate = '0';
+        private bool isTextInputEnabled;
+        private bool isClosed;
+        private bool isMouseCaptured;
+        private WindowPosition previousMouseCursorPosition;
+        private char highSurrogate;
 
-        private HMONITOR hMonitor = new();
-        private string monitorDeviceName = "";
+        private HMONITOR hMonitor;
+        private string monitorDeviceName;
 
         private record struct DevModeInfo(DEVMODEW DevMode, uint Index);
 
-        private Dictionary<VideoMode, DevModeInfo> devModes = new();
+        private Dictionary<VideoMode, DevModeInfo> devModes;
         private WindowPosition windowedModeSavedPosition;
         private WindowExtent windowedModeSavedExtent;
         private bool isFullScreen;

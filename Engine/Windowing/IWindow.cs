@@ -1,5 +1,6 @@
 ﻿namespace Engine.Windowing
 {
+
     public interface IWindow : IDisposable
     {
         IWindowSubsystem Subsystem { get; }
