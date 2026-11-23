@@ -98,12 +98,20 @@ namespace Engine.Windowing.Win32
                         case PInvoke.WM_SIZE:
                             uint width = PInvoke.LOWORD((uint)lParam.Value);
                             uint height = PInvoke.HIWORD((uint)lParam.Value);
-                            subsystem.EnqueueEvent(new Event { win = win, args = new WindowResizedEventArgs(timeMs, new WindowExtent(width, height)) });
+
+                            var extent = new WindowExtent(width, height);
+                            subsystem.EnqueueEvent(new Event { win = win, args = new WindowResizedEventArgs(timeMs, extent) });
+
+                            win.UpdateWindowedModeSavedExtent(extent);
                             break;
                         case PInvoke.WM_MOVE:
                             int x = PInvoke.GET_X_LPARAM(lParam);
                             int y = PInvoke.GET_Y_LPARAM(lParam);
-                            subsystem.EnqueueEvent(new Event { win = win, args = new WindowMovedEventArgs(timeMs, new WindowPosition(x, y)) });
+
+                            var position = new WindowPosition(x, y);
+                            subsystem.EnqueueEvent(new Event { win = win, args = new WindowMovedEventArgs(timeMs, position) });
+
+                            win.UpdateWindowedModeSavedPosition(position);
                             break;
                         case PInvoke.WM_MOUSEMOVE:
                             if (PInvoke.GetActiveWindow() == hWnd)
@@ -275,18 +283,21 @@ namespace Engine.Windowing.Win32
                                 });
                             break;
                         case PInvoke.WM_CHAR:
-                            string? text = win.AppendCharMessageCharacter((char)wParam.Value);
-                            if (text != null)
+                            if (win.IsTextInputEnabled)
                             {
-                                subsystem.EnqueueEvent(
-                                    new Event
-                                    {
-                                        win = win,
-                                        args = new WindowKeyboardTextInputtedEventArgs(
-                                            timeMs,
-                                            GetKeyboardModifiers(),
-                                            text)
-                                    });
+                                string? text = win.AppendCharMessageCharacter((char)wParam.Value);
+                                if (text != null)
+                                {
+                                    subsystem.EnqueueEvent(
+                                        new Event
+                                        {
+                                            win = win,
+                                            args = new WindowKeyboardTextInputtedEventArgs(
+                                                timeMs,
+                                                GetKeyboardModifiers(),
+                                                text)
+                                        });
+                                }
                             }
                             break;
                         case PInvoke.WM_SYSCOMMAND:

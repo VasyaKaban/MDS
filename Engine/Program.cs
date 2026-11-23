@@ -1,4 +1,6 @@
 ﻿using Engine.Windowing;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Engine
 {
@@ -12,7 +14,6 @@ namespace Engine
                 {
                     Title = "amogus",
                     Extent = new WindowExtent(800, 600),
-                    State = WindowState.Windowed,
                     TextInputEnabled = false
                 });
 
@@ -24,7 +25,7 @@ namespace Engine
                 Console.Out.WriteLine($"Closed: {args.TimeMs}ms");
             };
 
-            window.Resized += (_, args) =>
+            /*window.Resized += (_, args) =>
             {
                 Console.Out.WriteLine($"#{eventId++};=========================================================================");
                 Console.Out.WriteLine($"Resized: {args.TimeMs}ms");
@@ -90,11 +91,32 @@ namespace Engine
                 Console.Out.WriteLine($"VerticalScrollDelta: {args.VerticalScrollDelta}");
                 Console.Out.WriteLine($"HorizontalScrollDelta: {args.HorizontalScrollDelta}");
                 Console.Out.WriteLine($"Buttons: {args.Buttons}");
-            };
+            };*/
 
             window.KeyboardKeyToggled += (win, args) =>
             {
-                Console.Out.WriteLine($"#{eventId++};=========================================================================");
+                if (!args.IsPressed)
+                    return;
+
+                if(args.Key is SpecialKey.Enter)
+                {
+                    var modes = win.GetAvailableDisplayVideoModes();
+                    foreach(var mode in modes)
+                    {
+                        if (mode.Width >= 2560 && mode.Height >= 1440 && mode.RefreshRate > 90)
+                        {
+                            win.SetFullscreenMode(mode);
+                            break;
+                        }
+                    }
+                    
+                }
+                else if(args.Key is SpecialKey.BackSpace)
+                {
+                    win.SetWindowedMode();
+                }
+
+                /*Console.Out.WriteLine($"#{eventId++};=========================================================================");
                 Console.Out.WriteLine($"KeyboardKeyToggled: {args.TimeMs}ms");
                 Console.Out.WriteLine($"ScanCode: {args.ScanCode:x}");
                 Console.Out.WriteLine($"Modifiers: {args.Modifiers}");
@@ -108,19 +130,46 @@ namespace Engine
                     case string keyName:
                         Console.Out.WriteLine($"KeyName: {keyName}");
                         break;
-                }
+                }*/
             };
 
-            window.KeyboardTextInputted += (_, args) =>
+            Stack<(int, int)> consolePositionsState = new();
+
+            /*window.KeyboardTextInputted += (_, args) =>
             {
-                //TODO: Check
+                foreach(Rune rune in args.Text.EnumerateRunes())
+                {
+                    if (rune.Value == '\r')
+                    {
+                        consolePositionsState.Push((Console.CursorLeft, Console.CursorTop));
+                        Console.Out.WriteLine();
+                    }
+                    else if (rune.Value == '\b')
+                    {
+                        if(Console.CursorLeft != 0)
+                            Console.Out.Write("\b \b");
+                        else
+                        {
+                            if (consolePositionsState.Count != 0)
+                            {
+                                var (left, top) = consolePositionsState.Peek();
+                                Console.SetCursorPosition(left, top);
+                                if(left != 0)
+                                    Console.Out.Write("\b \b");
+                            }
+                        }
+                    }
+                    else
+                        Console.Out.Write(rune);
+                }
+
                 //Console.Out.WriteLine($"#{eventId++};=========================================================================");
                 //Console.Out.WriteLine($"KeyboardTextInputted: {args.TimeMs}ms");
                 //Console.Out.WriteLine($"Modifiers: {args.Modifiers}");
                 //Console.Out.WriteLine($"Text: {args.Text}");
-            };
+            };*/
 
-            window.DisplayChanged += (win, args) =>
+            /*window.DisplayChanged += (win, args) =>
             {
                 var currentVideoMode = win.GetCurrentDisplayVideoMode();
                 var displayModes = win.GetAvailableDisplayVideoModes();
@@ -133,7 +182,7 @@ namespace Engine
                     Console.Out.WriteLine($"Mode({index}): {mode.Width}x{mode.Height}:{mode.RefreshRate}Hz");
                 }
 
-            };
+            };*/
 
             while (!window.IsClosed)
             {

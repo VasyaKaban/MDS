@@ -6,14 +6,15 @@
 
         string Title { get; set; }
         WindowExtent Extent { get; set; }
-        WindowState State { get; set; }
+        bool IsFullScreen { get; }
 
-        bool TextInputEnabled { get; set; }//if enabled - collects all text input events(implementation) and emits KeyboardTextInputted
+        bool IsTextInputEnabled { get; set; }//if enabled - collects all text input events(implementation) and emits KeyboardTextInputted
         bool IsClosed { get; }
 
         VideoMode GetCurrentDisplayVideoMode();
         IReadOnlyCollection<VideoMode> GetAvailableDisplayVideoModes();
-        void SetDisplayVideoMode(VideoMode videoMode);
+        void SetFullscreenMode(VideoMode videoMode);
+        void SetWindowedMode();
 
         event Action<IWindow, WindowClosedEventArgs> Closed;
         event Action<IWindow, WindowResizedEventArgs> Resized;

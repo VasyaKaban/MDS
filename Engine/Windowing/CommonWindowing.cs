@@ -7,17 +7,10 @@
         public const int DEFAULT_POSITION = int.MaxValue;
     }
 
-    public enum WindowState
-    {
-        Windowed,
-        FullScreen
-    }
-
     public struct WindowCreateInfo
     {
         public string Title { get; set; }
         public WindowExtent Extent { get; set; }//client rect
-        public WindowState State { get; set; }
         public bool TextInputEnabled { get; set; }
     }
 

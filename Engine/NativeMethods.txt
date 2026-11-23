@@ -71,3 +71,7 @@ GetMonitorInfoW
 MONITORINFOEXW 
 EnumDisplaySettingsExW 
 ChangeDisplaySettingsExW
+GetWindowRect
+HWND_NOTOPMOST
+HWND_TOPMOST
+ClientToScreen
