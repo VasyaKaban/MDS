@@ -197,8 +197,7 @@
     public enum ImageCreateFlags
     {
         None = 0,
-        CubeMapCompatible = 1 << 0,
-        GenerateMipMaps = 1 << 1,
+        CubeMapCompatible = 1 << 0
     }
 
     public enum ImageType
@@ -259,6 +258,13 @@
         DepthStencilAttachment = 1 << 6
     }
 
+    [Flags]
+    public enum ImageAdditionalFlags
+    {
+        None = 0,
+        GenerateMipMaps = 1 << 0
+    }
+
     public struct ImageCreateInfo
     {
         public ImageCreateFlags flags;
@@ -269,6 +275,7 @@
         public uint arrayLayers;
         public SampleCountFlags samples;
         public ImageUsageFlags usage;
+        public ImageAdditionalFlags additionalFlags;
     }
 
     public struct ImageSubresourceLayers
