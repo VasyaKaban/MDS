@@ -24,26 +24,26 @@
 
     public struct ComponentMapping
     {
-        ComponentSwizzle red;
-        ComponentSwizzle green;
-        ComponentSwizzle blue;
-        ComponentSwizzle alpha;
+        public ComponentSwizzle red;
+        public ComponentSwizzle green;
+        public ComponentSwizzle blue;
+        public ComponentSwizzle alpha;
     }
 
     public struct ImageSubresourceRange
     {
-        uint baseMipLevel;
-        uint levelCount;
-        uint baseArrayLayer;
-        uint layerCount;
+        public uint baseMipLevel;
+        public uint levelCount;
+        public uint baseArrayLayer;
+        public uint layerCount;
     }
 
     public struct ImageViewCreateInfo
     {
-        IImage image;
-        ImageViewType viewType;
-        ComponentMapping components;
-        ImageSubresourceRange subresourceRange;
+        public IImage image;
+        public ImageViewType viewType;
+        public ComponentMapping components;
+        public ImageSubresourceRange subresourceRange;
     }
 
 

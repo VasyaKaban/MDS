@@ -39,20 +39,20 @@
 
     public struct SamplerCreateInfo
     {
-        Filter magFilter;
-        Filter minFilter;
-        Filter mipmapFilter;
-        SamplerAddressMode addressModeU;
-        SamplerAddressMode addressModeV;
-        SamplerAddressMode addressModeW;
-        float mipLodBias;
-        bool anisotropyEnable;
-        float maxAnisotropy;
-        bool compareEnable;
-        CompareOperation compareOperation;
-        float minLod;
-        float maxLod;
-        StaticBorderColor borderColor;
+        public Filter magFilter;
+        public Filter minFilter;
+        public Filter mipmapFilter;
+        public SamplerAddressMode addressModeU;
+        public SamplerAddressMode addressModeV;
+        public SamplerAddressMode addressModeW;
+        public float mipLodBias;
+        public bool anisotropyEnable;
+        public float maxAnisotropy;
+        public bool compareEnable;
+        public CompareOperation compareOperation;
+        public float minLod;
+        public float maxLod;
+        public StaticBorderColor borderColor;
     }
 
     public interface ISampler : IDisposable

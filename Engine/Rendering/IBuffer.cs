@@ -4,8 +4,8 @@
     public enum BufferUsageFlags
     {
         None = 0,
-        TransferSrc = 1 << 0,
-        TransferDst = 1 << 1,
+        TransferSource = 1 << 0,
+        TransferDestination = 1 << 1,
         UniformBuffer = 1 << 2,
         StorageBuffer = 1 << 3,
         IndexBuffer = 1 << 4,
@@ -31,22 +31,22 @@
 
     public struct BufferCreateInfo
     {
-        ulong size;
-        BufferUsageFlags usage;
-        BufferCPUMapAccessFlags cpuMapAccess;
+        public ulong size;
+        public BufferUsageFlags usage;
+        public BufferCPUMapAccessFlags cpuMapAccess;
     }
 
     public struct BufferCopy
     {
-        ulong srcOffset;
-        uint dstOffset;
-        uint size;
+        public ulong srcOffset;
+        public uint dstOffset;
+        public uint size;
     }
 
     public struct BufferInitialData
     {
-        ReadOnlyMemory<byte> data;
-        ReadOnlyMemory<BufferCopy> regions;
+        public ReadOnlyMemory<byte> data;
+        public ReadOnlyMemory<BufferCopy> regions;
     }
 
     public interface IBuffer : IDisposable

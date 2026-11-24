@@ -210,28 +210,28 @@
 
     public struct Extent2D
     {
-        uint x;
-        uint y;
+        public uint x;
+        public uint y;
     }
 
     public struct Extent3D
     {
-        uint x;
-        uint y;
-        uint z;
+        public uint x;
+        public uint y;
+        public uint z;
     }
 
     public struct Offset2D
     {
-        int x;
-        int y;
+        public int x;
+        public int y;
     }
 
     public struct Offset3D
     {
-        int x;
-        int y;
-        int z;
+        public int x;
+        public int y;
+        public int z;
     }
 
     [Flags]
@@ -248,49 +248,50 @@
     }
 
     [Flags]
-    public enum ImageUsage
+    public enum ImageUsageFlags
     {
         None = 0,
-        TransferDst = 1 << 0,
-        Sampled = 1 << 1,
-        Storage = 1 << 2,
-        ColorAttachment = 1 << 3,
-        DepthStencilAttachment = 1 << 4
+        TransferSource = 1 << 1,
+        TransferDestination = 1 << 2,
+        Sampled = 1 << 3,
+        Storage = 1 << 4,
+        ColorAttachment = 1 << 5,
+        DepthStencilAttachment = 1 << 6
     }
 
     public struct ImageCreateInfo
     {
-        ImageCreateFlags flags;
-        ImageType imageType;
-        Format format;
-        Extent3D extent;
-        uint mipLevels;
-        uint arrayLayers;
-        SampleCountFlags samples;
-        ImageUsage usage;
+        public ImageCreateFlags flags;
+        public ImageType imageType;
+        public Format format;
+        public Extent3D extent;
+        public uint mipLevels;
+        public uint arrayLayers;
+        public SampleCountFlags samples;
+        public ImageUsageFlags usage;
     }
 
     public struct ImageSubresourceLayers
     {
-        uint mipLevel;
-        uint baseArrayLayer;
-        uint layerCount;
+        public uint mipLevel;
+        public uint baseArrayLayer;
+        public uint layerCount;
     }
 
     public struct BufferImageCopy
     {
-        ulong bufferOffset;
-        uint bufferRowLength;
-        uint bufferImageHeight;
-        ImageSubresourceLayers imageSubresource;
-        Offset3D imageOffset;
-        Extent3D imageExtent;
+        public ulong bufferOffset;
+        public uint bufferRowLength;
+        public uint bufferImageHeight;
+        public ImageSubresourceLayers imageSubresource;
+        public Offset3D imageOffset;
+        public Extent3D imageExtent;
     }
 
     public struct ImageInitialData
     {
-        ReadOnlyMemory<byte> data;
-        ReadOnlyMemory<BufferImageCopy> regions;
+        public ReadOnlyMemory<byte> data;
+        public ReadOnlyMemory<BufferImageCopy> regions;
     }
 
     public interface IImage : IDisposable
