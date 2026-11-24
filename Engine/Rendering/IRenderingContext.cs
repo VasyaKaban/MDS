@@ -110,9 +110,7 @@ namespace Engine.Rendering
 
     public struct RenderingContextProperties
     {
-        uint apiMajorVersion;
-        uint apiMinorVersion;
-        string deviceName;
+        public string deviceName;
     }
 
     public interface IRenderingContext : IDisposable
@@ -137,7 +135,7 @@ namespace Engine.Rendering
         void SwapBuffers();
 
         //Submit
-        void Submit(Span<ICommandBuffer> commandBuffers, ref IFence? fence);
+        void Submit(Span<ICommandBuffer> commandBuffers, out IFence? fence);
         void Wait();
 
         //Properties/Features
