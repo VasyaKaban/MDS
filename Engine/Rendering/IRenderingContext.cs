@@ -58,6 +58,7 @@ namespace Engine.Rendering
         ColorAttachmentBlend = 1 << 5,
         DepthStencilAttachment = 1 << 6,
         SampledImageFilterLinear = 1 << 7,
+        MipMapGeneration = 1 << 8
     }
 
     public struct ImageFormatProperties
