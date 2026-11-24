@@ -21,10 +21,26 @@ namespace Engine.Rendering
         Performance = 1 << 2
     }
 
+    public enum PresentMode
+    {
+        Immediate,
+        Mailbox,
+        FirstInFirstOut,
+        FirstInFirstOutRelaxed
+    }
+
+    public struct SwapchainCreateInfo
+    {
+        Format imageFormat;
+        PresentMode presentMode;
+    }
+
     delegate void DebugMessengerDelegate(DebugMessageSeverityFlags severity, DebugMessageTypeFlags type, string message);
+    delegate SwapchainCreateInfo SwapchainConfigureDelegate(ReadOnlySpan<Format> formats, ReadOnlySpan<PresentMode> presentModes);
 
     public struct RenderingContextCreateInfo
     {
+        SwapchainConfigureDelegate swapchainConfigure;
         DebugMessengerDelegate? debugMessenger;
         DebugMessageSeverityFlags severityMask;
         DebugMessageTypeFlags typeMask;
@@ -115,8 +131,10 @@ namespace Engine.Rendering
         IPipeline CreateComputePipeline(in ComputePipelineCreateInfo info);
 
         //Swapchain
+        PresentMode[] GetSupportedPresentModes();
+        Format GetSwapchainImageFormat();
         IFramebuffer GetCurrentSwapchainFramebuffer();
-        void SwqapBuffers();
+        void SwapBuffers();
 
         //Submit
         void Submit(Span<ICommandBuffer> commandBuffers, ref IFence? fence);
