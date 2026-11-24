@@ -21,9 +21,11 @@ namespace Engine.Rendering
         Performance = 1 << 2
     }
 
+    delegate void DebugMessengerDelegate(DebugMessageSeverityFlags severity, DebugMessageTypeFlags type, string message);
+
     public struct RenderingContextCreateInfo
     {
-        IRenderingContext.DebugMessengerDelegate? debugMessenger;
+        DebugMessengerDelegate? debugMessenger;
         DebugMessageSeverityFlags severityMask;
         DebugMessageTypeFlags typeMask;
     }
@@ -134,8 +136,5 @@ namespace Engine.Rendering
             ImageUsageFlags usage,
             ImageCreateFlags flags,
             out ImageFormatProperties properties);
-
-        //Debug
-        delegate void DebugMessengerDelegate(DebugMessageSeverityFlags severity, DebugMessageTypeFlags type, string message);
     }
 }
