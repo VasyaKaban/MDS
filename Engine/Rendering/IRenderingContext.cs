@@ -132,6 +132,7 @@ namespace Engine.Rendering
         //Swapchain
         PresentMode[] GetSupportedPresentModes();
         Format GetSwapchainImageFormat();
+        void SetPresentMode(PresentMode presentMode);
         IFramebuffer GetCurrentSwapchainFramebuffer();
         void SwapBuffers();
 
