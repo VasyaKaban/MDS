@@ -3,7 +3,7 @@
 namespace Engine.Rendering
 {
     [Flags]
-    public enum DebugMessageSeverityFlags
+    public enum DebugMessageSeverity
     {
         None = 0,
         Verbose = 1 << 0,
@@ -13,7 +13,7 @@ namespace Engine.Rendering
     }
 
     [Flags]
-    public enum DebugMessageTypeFlags
+    public enum DebugMessageType
     {
         None = 0,
         General = 1 << 0,
@@ -29,25 +29,23 @@ namespace Engine.Rendering
         FirstInFirstOutRelaxed
     }
 
-    public struct SwapchainCreateInfo
-    {
-        Format imageFormat;
-        PresentMode presentMode;
-    }
+    public readonly record struct SwapchainCreateInfo(
+        Format ImageFormat,
+        PresentMode PresentMode
+    );
 
-    delegate void DebugMessengerDelegate(DebugMessageSeverityFlags severity, DebugMessageTypeFlags type, string message);
-    delegate SwapchainCreateInfo SwapchainConfigureDelegate(ReadOnlySpan<Format> formats, ReadOnlySpan<PresentMode> presentModes);
+    public delegate void DebugMessengerDelegate(DebugMessageSeverity severity, DebugMessageType type, string message);
+    public delegate SwapchainCreateInfo SwapchainConfigureDelegate(ReadOnlySpan<Format> formats, ReadOnlySpan<PresentMode> presentModes);
 
-    public struct RenderingContextCreateInfo
-    {
-        SwapchainConfigureDelegate swapchainConfigure;
-        DebugMessengerDelegate? debugMessenger;
-        DebugMessageSeverityFlags severityMask;
-        DebugMessageTypeFlags typeMask;
-    }
+    public readonly record struct RenderingContextCreateInfo(
+        SwapchainConfigureDelegate SwapchainConfigure,
+        DebugMessengerDelegate? DebugMessenger,
+        DebugMessageSeverity DebugMessengerSeverityMask,
+        DebugMessageType DebugMessengerTypeMask
+    );
 
     [Flags]
-    public enum FormatFeatureFlags
+    public enum FormatFeature
     {
         None = 0,
         SampledImage = 1 << 0,
@@ -61,13 +59,12 @@ namespace Engine.Rendering
         MipMapGeneration = 1 << 8
     }
 
-    public struct ImageFormatProperties
-    {
-        public Extent3D maxExtent;
-        public uint maxMipLevels;
-        public uint maxArrayLayers;
-        public SampleCountFlags sampleCounts;
-    }
+    public readonly record struct ImageFormatProperties(
+        Extent3D MaxExtent,
+        uint MaxMipLevels,
+        uint MaxArrayLayers,
+        SampleCount SampleCounts
+    );
 
     public enum RenderingContextFeature
     {
@@ -109,9 +106,143 @@ namespace Engine.Rendering
         ShaderResourceMinLod
     }
 
-    public struct RenderingContextProperties
+    //TODO: check availability of each limit
+    public enum RenderingContextIntLimit
     {
-        public string deviceName;
+        MinTexelOffset,
+        MinTexelGatherOffset,
+    }
+
+    public enum RenderingContextUIntLimit
+    {
+        MaxImageDimension1D,
+        MaxImageDimension2D,
+        MaxImageDimension3D,
+        MaxImageDimensionCube,
+        MaxImageArrayLayers,
+        MaxTexelBufferElements,
+        MaxUniformBufferRange,
+        MaxStorageBufferRange,
+        MaxMemoryAllocationCount,
+        MaxPushConstantsSize,
+        MaxSamplerAllocationCount,
+        MaxBoundDescriptorSets,
+        MaxPerStageDescriptorSamplers,
+        MaxPerStageDescriptorUniformBuffers,
+        MaxPerStageDescriptorStorageBuffers,
+        MaxPerStageDescriptorSampledImages,
+        MaxPerStageDescriptorStorageImages,
+        MaxPerStageDescriptorInputAttachments,
+        MaxPerStageResources,
+        MaxDescriptorSetSamplers,
+        MaxDescriptorSetUniformBuffers,
+        MaxDescriptorSetUniformBuffersDynamic,
+        MaxDescriptorSetStorageBuffers,
+        MaxDescriptorSetStorageBuffersDynamic,
+        MaxDescriptorSetSampledImages,
+        MaxDescriptorSetStorageImages,
+        MaxDescriptorSetInputAttachments,
+        MaxVertexInputAttributes,
+        MaxVertexInputBindings,
+        MaxVertexInputAttributeOffset,
+        MaxVertexInputBindingStride,
+        MaxVertexOutputComponents,
+        MaxTessellationGenerationLevel,
+        MaxTessellationPatchSize,
+        MaxTessellationControlPerVertexInputComponents,
+        MaxTessellationControlPerVertexOutputComponents,
+        MaxTessellationControlPerPatchOutputComponents,
+        MaxTessellationControlTotalOutputComponents,
+        MaxTessellationEvaluationInputComponents,
+        MaxTessellationEvaluationOutputComponents,
+        MaxGeometryShaderInvocations,
+        MaxGeometryInputComponents,
+        MaxGeometryOutputComponents,
+        MaxGeometryOutputVertices,
+        MaxGeometryTotalOutputComponents,
+        MaxFragmentInputComponents,
+        MaxFragmentOutputAttachments,
+        MaxFragmentDualSrcAttachments,
+        MaxFragmentCombinedOutputResources,
+        MaxComputeSharedMemorySize,
+        MaxComputeWorkGroupCountX,
+        MaxComputeWorkGroupCountY,
+        MaxComputeWorkGroupCountZ,
+        MaxComputeWorkGroupInvocations,
+        MaxComputeWorkGroupSizeX,
+        MaxComputeWorkGroupSizeY,
+        MaxComputeWorkGroupSizeZ,
+        SubPixelPrecisionBits,
+        SubTexelPrecisionBits,
+        MipmapPrecisionBits,
+        MaxDrawIndexedIndexValue,
+        MaxDrawIndirectCount,
+        MaxViewports,
+        MaxViewportWidth,
+        MaxViewportHeight,
+        ViewportSubPixelBits,
+        MaxTexelOffset,
+        MaxTexelGatherOffset,
+        SubPixelInterpolationOffsetBits,
+        MaxFramebufferWidth,
+        MaxFramebufferHeight,
+        MaxFramebufferLayers,
+        MaxColorAttachments,
+        MaxSampleMaskWords,
+        MaxClipDistances,
+        MaxCullDistances,
+        MaxCombinedClipAndCullDistances,
+        DiscreteQueuePriorities,
+    }
+
+    public enum RenderingContextFloatLimit
+    {
+        MaxSamplerLodBias,
+        MaxSamplerAnisotropy,
+        ViewportBoundsRangeStart,
+        ViewportBoundsRangeEnd,
+        MinInterpolationOffset,
+        MaxInterpolationOffset,
+        TimestampPeriod,
+        PointSizeRangeStart,
+        PointSizeRangeEnd,
+        LineWidthRangeStart,
+        LineWidthRangeEnd,
+        PointSizeGranularity,
+        LineWidthGranularity,
+    }
+
+    public enum RenderingContextUlongLimit
+    {
+        BufferImageGranularity,
+        SparseAddressSpaceSize,
+        MinMemoryMapAlignment,
+        MinTexelBufferOffsetAlignment,
+        MinUniformBufferOffsetAlignment,
+        MinStorageBufferOffsetAlignment,
+        OptimalBufferCopyOffsetAlignment,
+        OptimalBufferCopyRowPitchAlignment,
+        NonCoherentAtomSize
+    }
+
+    public enum RenderingContextSampleCountLimit
+    {
+        FramebufferColorSampleCounts,
+        FramebufferDepthSampleCounts,
+        FramebufferStencilSampleCounts,
+        FramebufferNoAttachmentsSampleCounts,
+        SampledImageColorSampleCounts,
+        SampledImageIntegerSampleCounts,
+        SampledImageDepthSampleCounts,
+        SampledImageStencilSampleCounts,
+        StorageImageSampleCounts,
+    }
+
+    public enum RenderingContextBoolLimit
+    {
+        TimestampComputeAndGraphics,
+        StrictLines,
+        StandardSampleLocations,
     }
 
     public interface IRenderingContext : IDisposable
@@ -128,6 +259,7 @@ namespace Engine.Rendering
         IFramebuffer CreateFramebuffer(in FrambufferCreateInfo info);
         IPipeline CreateGraphicsPipeline(in GraphicsPipelineCreateInfo info);
         IPipeline CreateComputePipeline(in ComputePipelineCreateInfo info);
+        IFence CreateFence();
 
         //Swapchain
         PresentMode[] GetSupportedPresentModes();
@@ -141,18 +273,22 @@ namespace Engine.Rendering
         void Wait();
 
         //Properties/Features
-        //TODO: Limits?
         bool IsFeatureSupported(RenderingContextFeature feature);
-        void Getproperties(out RenderingContextProperties properties);
+        string GetDeviceName();
+        int GetLimit(RenderingContextIntLimit limit);
+        uint GetLimit(RenderingContextUIntLimit limit);
+        float GetLimit(RenderingContextFloatLimit limit);
+        ulong GetLimit(RenderingContextUlongLimit limit);
+        SampleCount GetLimit(RenderingContextSampleCountLimit limit);
+        bool GetLimit(RenderingContextBoolLimit limit);
 
         //Query
-        FormatFeatureFlags QueryBufferFormatSupport(Format format);
-        FormatFeatureFlags QueryImageFormatSupport(Format format, ImageType imageType, ImageCreateFlags flags);
-        void QueryImageFormatProperties(
+        FormatFeature QueryBufferFormatSupport(Format format);
+        FormatFeature QueryImageFormatSupport(Format format, ImageType imageType, ImageCreateFlags flags);
+        ImageFormatProperties QueryImageFormatProperties(
             Format format,
             ImageType type,
-            ImageUsageFlags usage,
-            ImageCreateFlags flags,
-            out ImageFormatProperties properties);
+            ImageUsage usage,
+            ImageCreateFlags flags);
     }
 }

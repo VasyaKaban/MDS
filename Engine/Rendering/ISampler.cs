@@ -37,27 +37,26 @@
         IntOpaqueWhite
     }
 
-    public struct SamplerCreateInfo
-    {
-        public Filter magFilter;
-        public Filter minFilter;
-        public Filter mipmapFilter;
-        public SamplerAddressMode addressModeU;
-        public SamplerAddressMode addressModeV;
-        public SamplerAddressMode addressModeW;
-        public float mipLodBias;
-        public bool anisotropyEnable;
-        public float maxAnisotropy;
-        public bool compareEnable;
-        public CompareOperation compareOperation;
-        public float minLod;
-        public float maxLod;
-        public StaticBorderColor borderColor;
-    }
+    public readonly record struct SamplerCreateInfo(
+        Filter MagFilter,
+        Filter MinFilter,
+        Filter MipmapFilter,
+        SamplerAddressMode AddressModeU,
+        SamplerAddressMode AddressModeV,
+        SamplerAddressMode AddressModeW,
+        float MipLodBias,
+        bool AnisotropyEnable,
+        float MaxAnisotropy,
+        bool CompareEnable,
+        CompareOperation CompareOperation,
+        float MinLod,
+        float MaxLod,
+        StaticBorderColor BorderColor
+    );
 
     public interface ISampler : IDisposable
     {
         IRenderingContext GetContext();
-        void GetCreateInfo(out SamplerCreateInfo info);
+        SamplerCreateInfo GetCreateInfo();
     }
 }

@@ -17,7 +17,7 @@ namespace Engine
 
             ulong eventId = 0;
 
-            window.Closed += (_, args) =>
+            window.Closed += (_, in args) =>
             {
                 Console.Out.WriteLine($"#{eventId++};=========================================================================");
                 Console.Out.WriteLine($"Closed: {args.TimeMs}ms");
@@ -91,27 +91,25 @@ namespace Engine
                 Console.Out.WriteLine($"Buttons: {args.Buttons}");
             };*/
 
-            window.KeyboardKeyToggled += (win, args) =>
+            window.MouseCursorMoved += (_, in args) =>
+            {
+                Console.Out.WriteLine($"CursorPosition: {args.CursorPosition.X}; {args.CursorPosition.Y}");
+            };
+
+            window.KeyboardKeyToggled += (win, in args) =>
             {
                 if (!args.IsPressed)
                     return;
 
                 if (args.Key is SpecialKey.Enter)
                 {
-                    var modes = win.GetAvailableDisplayVideoModes();
-                    foreach (var mode in modes)
-                    {
-                        if (mode.Width >= 2560 && mode.Height >= 1440 && mode.RefreshRate > 90)
-                        {
-                            win.SetFullscreenMode(mode);
-                            break;
-                        }
-                    }
+                    win.Subsystem.AcquireMouseCursor(win);
+                    win.Extent = new WindowExtent { Width = 400, Height = 300 };
 
                 }
                 else if (args.Key is SpecialKey.BackSpace)
                 {
-                    win.SetWindowedMode();
+                    win.Subsystem.ReleaseMouseCursor();
                 }
 
                 /*Console.Out.WriteLine($"#{eventId++};=========================================================================");

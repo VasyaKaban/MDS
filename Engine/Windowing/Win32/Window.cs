@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Drawing;
 using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.Graphics.Gdi;
@@ -15,10 +16,6 @@ namespace Engine.Windowing.Win32
         {
             this.subsystem = subsystem;
             isTextInputEnabled = info.TextInputEnabled;
-            isFullScreen = false;
-            monitorDeviceName = "";
-            devModes = new();
-            windowedModePlacement = new() { length = (uint)Marshal.SizeOf<WINDOWPLACEMENT>() };
 
             try
             {
@@ -153,7 +150,7 @@ namespace Engine.Windowing.Win32
             return new VideoMode(devMode.dmPelsWidth, devMode.dmPelsHeight, devMode.dmDisplayFrequency);
         }
 
-        public void SetFullscreenMode(VideoMode videoMode)
+        public void SetFullscreenMode(in VideoMode videoMode)
         {
             var devModeInfo = devModes[videoMode];
 
@@ -207,7 +204,7 @@ namespace Engine.Windowing.Win32
             isMouseCaptured = false;
         }
 
-        public void HandleEvent(WindowEventArgs eventArgs)
+        public void HandleEvent(in EventArgs eventArgs)
         {
             switch (eventArgs)
             {
@@ -279,7 +276,7 @@ namespace Engine.Windowing.Win32
 
             monitorDeviceName = monitorInfoEx.szDevice.ToString();
 
-            devModes = new(capacity: 32);
+            devModes.Clear();
 
             for (uint devModeIndex = 0; true; devModeIndex++)
             {
@@ -311,6 +308,19 @@ namespace Engine.Windowing.Win32
         {
             if (!IsFullScreen)
                 SaveWindowedModeState();
+        }
+
+        public RECT GetScreenClientRect()
+        {
+            PInvoke.GetClientRect(hWnd, out RECT rect);
+
+            Point leftTop = new Point { X = rect.left, Y = rect.top };
+            PInvoke.ClientToScreen(hWnd, ref leftTop);
+
+            Point rightBottom = new Point { X = rect.right, Y = rect.bottom };
+            PInvoke.ClientToScreen(hWnd, ref rightBottom);
+
+            return new RECT { left = leftTop.X, top = leftTop.Y, right = rightBottom.X, bottom = rightBottom.Y };
         }
 
         private static WindowExtent FromClientToWindowExtent(in WindowExtent extent, WINDOW_STYLE dwStyle, WINDOW_EX_STYLE dwExStyle)
@@ -351,37 +361,36 @@ namespace Engine.Windowing.Win32
             SaveWindowedModeState();
         }
 
+        public event WindowEventHandler<WindowClosedEventArgs>? Closed;
+        public event WindowEventHandler<WindowResizedEventArgs>? Resized;
+        public event WindowEventHandler<WindowMovedEventArgs>? Moved;
+        public event WindowEventHandler<WindowMouseFocusGainedEventArgs>? MouseFocusGained;
+        public event WindowEventHandler<WindowMouseFocusLeftEventArgs>? MouseFocusLeft;
+        public event WindowEventHandler<WindowKeyboardFocusGainedEventArgs>? KeyboardFocusGained;
+        public event WindowEventHandler<WindowKeyboardFocusLeftEventArgs>? KeyboardFocusLeft;
+        public event WindowEventHandler<WindowMouseCursorMovedEventArgs>? MouseCursorMoved;
+        public event WindowEventHandler<WindowMouseButtonToggledEventArgs>? MouseButtonToggled;
+        public event WindowEventHandler<WindowMouseWheelScrolledEventArgs>? MouseWheelScrolled;
+        public event WindowEventHandler<WindowKeyboardKeyToggledEventArgs>? KeyboardKeyToggled;
+        public event WindowEventHandler<WindowKeyboardTextInputtedEventArgs>? KeyboardTextInputted;
+        public event WindowEventHandler<WindowDisplayChangedEventArgs>? DisplayChanged;
 
-        public event Action<IWindow, WindowClosedEventArgs>? Closed;
-        public event Action<IWindow, WindowResizedEventArgs>? Resized;
-        public event Action<IWindow, WindowMovedEventArgs>? Moved;
-        public event Action<IWindow, WindowMouseFocusGainedEventArgs>? MouseFocusGained;
-        public event Action<IWindow, WindowMouseFocusLeftEventArgs>? MouseFocusLeft;
-        public event Action<IWindow, WindowKeyboardFocusGainedEventArgs>? KeyboardFocusGained;
-        public event Action<IWindow, WindowKeyboardFocusLeftEventArgs>? KeyboardFocusLeft;
-        public event Action<IWindow, WindowMouseCursorMovedEventArgs>? MouseCursorMoved;
-        public event Action<IWindow, WindowMouseButtonToggledEventArgs>? MouseButtonToggled;
-        public event Action<IWindow, WindowMouseWheelScrolledEventArgs>? MouseWheelScrolled;
-        public event Action<IWindow, WindowKeyboardKeyToggledEventArgs>? KeyboardKeyToggled;
-        public event Action<IWindow, WindowKeyboardTextInputtedEventArgs>? KeyboardTextInputted;
-        public event Action<IWindow, WindowDisplayChangedEventArgs>? DisplayChanged;
+        private GCHandle gcHandle = default;
+        private HWND hWnd = HWND.Null;
+        private WindowSubsystem subsystem = null!;
+        private bool isTextInputEnabled = false;
+        private bool isClosed = false;
+        private bool isMouseCaptured = false;
+        private WindowPosition previousMouseCursorPosition = new() { X = 0, Y = 0 };
+        private char highSurrogate = '\0';
 
-        private GCHandle gcHandle;
-        private HWND hWnd;
-        private WindowSubsystem subsystem;
-        private bool isTextInputEnabled;
-        private bool isClosed;
-        private bool isMouseCaptured;
-        private WindowPosition previousMouseCursorPosition;
-        private char highSurrogate;
+        private HMONITOR hMonitor = HMONITOR.Null;
+        private string monitorDeviceName = "";
 
-        private HMONITOR hMonitor;
-        private string monitorDeviceName;
+        private readonly record struct DevModeInfo(DEVMODEW DevMode, uint Index);
 
-        private record struct DevModeInfo(DEVMODEW DevMode, uint Index);
-
-        private Dictionary<VideoMode, DevModeInfo> devModes;
+        private Dictionary<VideoMode, DevModeInfo> devModes = [];
         private WINDOWPLACEMENT windowedModePlacement = new() { length = (uint)Marshal.SizeOf<WINDOWPLACEMENT>() };
-        private bool isFullScreen;
+        private bool isFullScreen = false;
     }
 }

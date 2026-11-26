@@ -208,34 +208,30 @@
         Image3D
     }
 
-    public struct Extent2D
-    {
-        public uint x;
-        public uint y;
-    }
+    public readonly record struct Extent2D(
+        uint Width,
+        uint Height
+    );
 
-    public struct Extent3D
-    {
-        public uint x;
-        public uint y;
-        public uint z;
-    }
+    public readonly record struct Extent3D(
+        uint Width,
+        uint Height,
+        uint Depth
+    );
 
-    public struct Offset2D
-    {
-        public int x;
-        public int y;
-    }
+    public readonly record struct Offset2D(
+        int X,
+        int Y
+    );
 
-    public struct Offset3D
-    {
-        public int x;
-        public int y;
-        public int z;
-    }
+    public readonly record struct Offset3D(
+        int X,
+        int Y,
+        int Z
+    );
 
     [Flags]
-    public enum SampleCountFlags
+    public enum SampleCount
     {
         None = 0,
         SampleCount1 = 1,
@@ -248,7 +244,7 @@
     }
 
     [Flags]
-    public enum ImageUsageFlags
+    public enum ImageUsage
     {
         None = 0,
         TransferSource = 1 << 1,
@@ -259,44 +255,40 @@
         DepthStencilAttachment = 1 << 6
     }
 
-    public struct ImageCreateInfo
-    {
-        public ImageCreateFlags flags;
-        public ImageType imageType;
-        public Format format;
-        public Extent3D extent;
-        public uint mipLevels;
-        public uint arrayLayers;
-        public SampleCountFlags samples;
-        public ImageUsageFlags usage;
-    }
+    public readonly record struct ImageCreateInfo(
+        ImageCreateFlags Flags,
+        ImageType ImageType,
+        Format Format,
+        Extent3D Extent,
+        uint MipLevels,
+        uint ArrayLayers,
+        SampleCount Samples,
+        ImageUsage Usage
+    );
 
-    public struct ImageSubresourceLayers
-    {
-        public uint mipLevel;
-        public uint baseArrayLayer;
-        public uint layerCount;
-    }
+    public readonly record struct ImageSubresourceLayers(
+        uint MipLevel,
+        uint BaseArrayLayer,
+        uint LayerCount
+    );
 
-    public struct BufferImageCopy
-    {
-        public ulong bufferOffset;
-        public uint bufferRowLength;
-        public uint bufferImageHeight;
-        public ImageSubresourceLayers imageSubresource;
-        public Offset3D imageOffset;
-        public Extent3D imageExtent;
-    }
+    public readonly record struct BufferImageCopy(
+        ulong BufferOffset,
+        uint BufferRowLength,
+        uint BufferImageHeight,
+        ImageSubresourceLayers ImageSubresource,
+        Offset3D ImageOffset,
+        Extent3D ImageExtent
+    );
 
-    public struct ImageInitialData
-    {
-        public ReadOnlyMemory<byte> data;
-        public ReadOnlyMemory<BufferImageCopy> regions;
-    }
+    public readonly record struct ImageInitialData(
+        ReadOnlyMemory<byte> Data,
+        ReadOnlyMemory<BufferImageCopy> Regions
+    );
 
     public interface IImage : IDisposable
     {
         IRenderingContext GetContext();
-        void GetCreateInfo(out ImageCreateInfo info);
+        ImageCreateInfo GetCreateInfo();
     }
 }

@@ -11,10 +11,7 @@ namespace Engine.Rendering
         Transient = 1 << 0
     }
 
-    public struct CommandPoolCreateInfo
-    {
-        public CommandPoolCreateFlags flags;
-    }
+    public readonly record struct CommandPoolCreateInfo(CommandPoolCreateFlags Flags);
 
     public interface ICommandPool : IDisposable
     {

@@ -22,35 +22,32 @@
         Alpha
     }
 
-    public struct ComponentMapping
-    {
-        public ComponentSwizzle red;
-        public ComponentSwizzle green;
-        public ComponentSwizzle blue;
-        public ComponentSwizzle alpha;
-    }
+    public readonly record struct ComponentMapping(
+        ComponentSwizzle Red,
+        ComponentSwizzle Green,
+        ComponentSwizzle Blue,
+        ComponentSwizzle Alpha
+    );
 
-    public struct ImageSubresourceRange
-    {
-        public uint baseMipLevel;
-        public uint levelCount;
-        public uint baseArrayLayer;
-        public uint layerCount;
-    }
+    public readonly record struct ImageSubresourceRange(
+        uint BaseMipLevel,
+        uint LevelCount,
+        uint BaseArrayLayer,
+        uint LayerCount
+    );
 
-    public struct ImageViewCreateInfo
-    {
-        public IImage image;
-        public ImageViewType viewType;
-        public ComponentMapping components;
-        public ImageSubresourceRange subresourceRange;
-    }
+    public readonly record struct ImageViewCreateInfo(
+        IImage Image,
+        ImageViewType ViewType,
+        ComponentMapping Components,
+        ImageSubresourceRange SubresourceRange
+    );
 
 
     public interface IImageView : IDisposable
     {
         IRenderingContext GetContext();
         IImage GetImage();
-        void GetCreateInfo(out ImageViewCreateInfo info);
+        ImageViewCreateInfo GetCreateInfo();
     }
 }

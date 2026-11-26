@@ -1,9 +1,6 @@
 ﻿namespace Engine.Rendering
 {
-    public struct ShaderCreateInfo
-    {
-        public ReadOnlyMemory<byte> code;
-    }
+    public readonly record struct ShaderCreateInfo(ReadOnlyMemory<byte> Code);
 
     public interface IShader : IDisposable
     {

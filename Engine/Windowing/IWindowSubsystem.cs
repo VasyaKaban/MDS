@@ -12,6 +12,9 @@
 
         bool IsKeyPressed(uint scanCode);
 
+        void AcquireMouseCursor(IWindow window);
+        void ReleaseMouseCursor();
+
         static IWindowSubsystem CreateSubsystem()
         {
             if (OperatingSystem.IsWindowsVersionAtLeast(10, 0))

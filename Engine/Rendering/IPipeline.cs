@@ -18,26 +18,23 @@ namespace Engine.Rendering
         Instance
     }
 
-    public struct VertexInputBindingDescription
-    {
-        public uint binding;
-        public uint stride;
-        public VertexInputRate inputRate;
-    }
+    public readonly record struct VertexInputBindingDescription(
+        uint Binding,
+        uint Stride,
+        VertexInputRate InputRate
+    );
 
-    public struct VertexInputAttributeDescription
-    {
-        public uint location;
-        public uint binding;
-        public Format format;
-        public uint offset;
-    }
+    public readonly record struct VertexInputAttributeDescription(
+        uint Location,
+        uint Binding,
+        Format Format,
+        uint Offset
+    );
 
-    public struct PipelineVertexStateCreateInfo
-    {
-        public ReadOnlyMemory<VertexInputBindingDescription> vertexBindingDescriptions;
-        public ReadOnlyMemory<VertexInputAttributeDescription> vertexAttributeDescriptions;
-    }
+    public readonly record struct PipelineVertexStateCreateInfo(
+        ReadOnlyMemory<VertexInputBindingDescription> VertexBindingDescriptions,
+        ReadOnlyMemory<VertexInputAttributeDescription> VertexAttributeDescriptions
+    );
 
     public enum PrimitiveTopology
     {
@@ -54,40 +51,33 @@ namespace Engine.Rendering
         PatchList
     }
 
-    public struct PipelineInputAssemblyStateCreateInfo
-    {
-        public PrimitiveTopology topology;
-        public bool stripTopologyPrimitiveRestartEnable;
-    }
+    public readonly record struct PipelineInputAssemblyStateCreateInfo(
+        PrimitiveTopology Topology,
+        bool StripTopologyPrimitiveRestartEnable
+    );
 
-    public struct PipelineTessellationStateCreateInfo
-    {
-        public uint patchControlPoints;
-    }
+    public readonly record struct PipelineTessellationStateCreateInfo(uint PatchControlPoints);
 
-    public struct Viewport
-    {
-        public float x;
-        public float y;
-        public float width;
-        public float height;
-        public float minDepth;
-        public float maxDepth;
-    }
+    public readonly record struct Viewport(
+        float X,
+        float Y,
+        float Width,
+        float Height,
+        float MinDepth,
+        float MaxDepth
+    );
 
-    public struct Rect2D
-    {
-        public Offset2D offset;
-        public Extent2D extent;
-    }
+    public readonly record struct Rect2D(
+        Offset2D Offset,
+        Extent2D Extent
+    );
 
-    public struct PipelineViewportStateCreateInfo
-    {
-        public uint viewportCount;
-        public ReadOnlyMemory<Viewport> viewports;
-        public uint scissorCount;
-        public ReadOnlyMemory<Rect2D> scissors;
-    }
+    public readonly record struct PipelineViewportStateCreateInfo(
+        uint ViewportCount,
+        ReadOnlyMemory<Viewport> Viewports,
+        uint ScissorCount,
+        ReadOnlyMemory<Rect2D> Scissors
+    );
 
     public enum PolygonMode
     {
@@ -97,7 +87,7 @@ namespace Engine.Rendering
     }
 
     [Flags]
-    public enum CullModeFlags
+    public enum CullMode
     {
         None = 0,
         Front = 1 << 0,
@@ -110,31 +100,29 @@ namespace Engine.Rendering
         Clockwise
     }
 
-    public struct PipelineRasterizationStateCreateInfo
-    {
-        public bool depthClampEnable;
-        public bool rasterizerDiscardEnable;
-        public PolygonMode polygonMode;
-        public CullModeFlags cullMode;
-        public FrontFace frontFace;
-        public bool depthBiasEnable;
-        public float depthBiasConstantFactor;
-        public float depthBiasClamp;
-        public float depthBiasSlopeFactor;
-        public float lineWidth;
-        public ReadOnlyMemory<Format> colorAttachmentFormats;
-        public Format? depthStencilAttachmentFormat;
-    }
+    public readonly record struct PipelineRasterizationStateCreateInfo(
+        bool DepthClampEnable,
+        bool RasterizerDiscardEnable,
+        PolygonMode PolygonMode,
+        CullMode CullModeMask,
+        FrontFace FrontFace,
+        bool DepthBiasEnable,
+        float DepthBiasConstantFactor,
+        float DepthBiasClamp,
+        float DepthBiasSlopeFactor,
+        float LineWidth,
+        ReadOnlyMemory<Format> ColorAttachmentFormats,
+        Format? DepthStencilAttachmentFormat
+    );
 
-    public struct PipelineMultisampleStateCreateInfo
-    {
-        public SampleCountFlags rasterizationSamples;
-        public bool sampleShadingEnable;
-        public float minSampleShading;
-        public ReadOnlyMemory<uint> sampleMask;
-        public bool alphaToCoverageEnable;
-        public bool alphaToOneEnable;
-    }
+    public readonly record struct PipelineMultisampleStateCreateInfo(
+        SampleCount RasterizationSamples,
+        bool SampleShadingEnable,
+        float MinSampleShading,
+        ReadOnlyMemory<uint> SampleMask,
+        bool AlphaToCoverageEnable,
+        bool AlphaToOneEnable
+    );
 
     public enum StencilOperation
     {
@@ -148,16 +136,15 @@ namespace Engine.Rendering
         DecrementAndWrap
     }
 
-    public struct StencilOperationState
-    {
-        public StencilOperation failOperation;
-        public StencilOperation passOperation;
-        public StencilOperation depthFailOperation;
-        public CompareOperation compareOperation;
-        public uint compareMask;
-        public uint writeMask;
-        public uint reference;
-    }
+    public readonly record struct StencilOperationState(
+        StencilOperation FailOperation,
+        StencilOperation PassOperation,
+        StencilOperation DepthFailOperation,
+        CompareOperation CompareOperation,
+        uint CompareMask,
+        uint WriteMask,
+        uint Reference
+    );
 
     public enum LogicOperation
     {
@@ -202,18 +189,17 @@ namespace Engine.Rendering
         OneMinusSource1Alpha,
     }
 
-    public struct PipelineDepthStencilStateCreateInfo
-    {
-        public bool depthTestEnable;
-        public bool depthWriteEnable;
-        public CompareOperation depthCompareOperation;
-        public bool depthBoundsTestEnable;
-        public bool stencilTestEnable;
-        public StencilOperationState front;
-        public StencilOperationState back;
-        public float minDepthBounds;
-        public float maxDepthBounds;
-    }
+    public readonly record struct PipelineDepthStencilStateCreateInfo(
+        bool DepthTestEnable,
+        bool DepthWriteEnable,
+        CompareOperation DepthCompareOperation,
+        bool DepthBoundsTestEnable,
+        bool StencilTestEnable,
+        StencilOperationState Front,
+        StencilOperationState Back,
+        float MinDepthBounds,
+        float MaxDepthBounds
+    );
 
     public enum BlendOperation
     {
@@ -225,7 +211,7 @@ namespace Engine.Rendering
     }
 
     [Flags]
-    public enum ColorComponentFlags
+    public enum ColorComponent
     {
         None = 0,
         Red = 1 << 0,
@@ -234,28 +220,26 @@ namespace Engine.Rendering
         Alpha = 1 << 3
     }
 
-    public struct PipelineColorBlendAttachmentState
-    {
-        public bool blendEnable;
-        public BlendFactor srcColorBlendFactor;
-        public BlendFactor dstColorBlendFactor;
-        public BlendOperation colorBlendOperation;
-        public BlendFactor srcAlphaBlendFactor;
-        public BlendFactor dstAlphaBlendFactor;
-        public BlendOperation alphaBlendOperation;
-        public ColorComponentFlags colorWriteMask;
-    }
+    public readonly record struct PipelineColorBlendAttachmentState(
+        bool BlendEnable,
+        BlendFactor SourceColorBlendFactor,
+        BlendFactor DestinationColorBlendFactor,
+        BlendOperation ColorBlendOperation,
+        BlendFactor SourceAlphaBlendFactor,
+        BlendFactor DestinationAlphaBlendFactor,
+        BlendOperation AlphaBlendOperation,
+        ColorComponent ColorWriteMask
+    );
 
-    public struct PipelineColorBlendStateCreateInfo
-    {
-        public bool logicOperationnable;
-        public LogicOperation logicOperation;
-        public ReadOnlyMemory<PipelineColorBlendAttachmentState> attachments;
-        public float redBlendContstant;
-        public float greenBlendContstant;
-        public float blueBlendContstant;
-        public float alphaBlendContstant;
-    }
+    public readonly record struct PipelineColorBlendStateCreateInfo(
+        bool LogicOperationnable,
+        LogicOperation LogicOperation,
+        ReadOnlyMemory<PipelineColorBlendAttachmentState> Attachments,
+        float RedBlendContstant,
+        float GreenBlendContstant,
+        float BlueBlendContstant,
+        float AlphaBlendContstant
+    );
 
     public enum DynamicState
     {
@@ -268,29 +252,25 @@ namespace Engine.Rendering
         StencilOperationValues
     }
 
-    public struct GraphicsPipelineCreateInfo
-    {
-        public IShader vertedShader;
-        public IShader? tesselationControlShader;
-        public IShader? tesselationEvaluationShader;
-        public IShader? geometryShader;
-        public IShader? fragmentShader;
+    public readonly record struct GraphicsPipelineCreateInfo(
+        IShader VertexShader,
+        IShader? TesselationControlShader,
+        IShader? TesselationEvaluationShader,
+        IShader? GeometryShader,
+        IShader? FragmentShader,
 
-        public PipelineVertexStateCreateInfo vertexInputState;
-        public PipelineInputAssemblyStateCreateInfo inputAssemblyState;
-        public PipelineTessellationStateCreateInfo? tessellationState;
-        public PipelineViewportStateCreateInfo? viewportState;
-        public PipelineRasterizationStateCreateInfo rasterizationState;
-        public PipelineMultisampleStateCreateInfo? multisampleState;
-        public PipelineDepthStencilStateCreateInfo? depthStencilState;
-        public PipelineColorBlendAttachmentState? colorBlendState;
-        public ReadOnlyMemory<DynamicState> dynamicStates;
-    }
+        PipelineVertexStateCreateInfo VertexInputState,
+        PipelineInputAssemblyStateCreateInfo InputAssemblyState,
+        PipelineTessellationStateCreateInfo? TessellationState,
+        PipelineViewportStateCreateInfo? ViewportState,
+        PipelineRasterizationStateCreateInfo RasterizationState,
+        PipelineMultisampleStateCreateInfo? MultisampleState,
+        PipelineDepthStencilStateCreateInfo? DepthStencilState,
+        PipelineColorBlendAttachmentState? ColorBlendState,
+        ReadOnlyMemory<DynamicState> DynamicStates
+    );
 
-    public struct ComputePipelineCreateInfo
-    {
-        public IShader computeShader;
-    }
+    public readonly record struct ComputePipelineCreateInfo(IShader ComputeShader);
 
     public interface IPipeline : IDisposable
     {

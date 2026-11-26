@@ -5,16 +5,13 @@ using System.Text;
 namespace Engine.Rendering
 {
     [Flags]
-    public enum CommandBufferUsageFlags
+    public enum CommandBufferUsage
     {
         None = 0,
         OneTimeSubmit = 1 << 0
     }
 
-    public struct CommandBufferBeginInfo
-    {
-        public CommandBufferUsageFlags flags;
-    }
+    public readonly record struct CommandBufferBeginInfo(CommandBufferUsage Usage);
 
     public struct DrawIndirectCommand
     {
@@ -67,65 +64,57 @@ namespace Engine.Rendering
         Matrix4x4
     }
 
-    public struct PushConstantRangeDesc
-    {
-        public PushConstantType type;
-        public PushConstantExtent extent;
-        public uint binding;
-        public uint count;
-        public ulong dataOffset;
-    }
+    public readonly record struct PushConstantRangeDesc(
+        PushConstantType Type,
+        PushConstantExtent Extent,
+        uint Binding,
+        uint Count,
+        ulong DataOffset
+    );
 
-    public ref struct PushConstantDesc
-    {
-        public ReadOnlySpan<PushConstantRangeDesc> ranges;
-        public ReadOnlySpan<byte> data;
-    }
+    public readonly record struct PushConstantDesc(
+        ReadOnlyMemory<PushConstantRangeDesc> Ranges,
+        ReadOnlyMemory<byte> Data
+    );
 
-    public struct SampledImageDesc
-    {
-        public IImageView imageView;
-        public ISampler sampler;
-    }
+    public readonly record struct SampledImageDesc(
+        IImageView ImageView,
+        ISampler Sampler
+    );
 
-    public struct BufferDesc
-    {
-        public IBuffer buffer;
-        public ulong offset;
-        public ulong size;
-    }
+    public readonly record struct BufferDesc(
+        IBuffer Buffer,
+        ulong Offset,
+        ulong Size
+    );
 
-    public struct ClearColorFloat
-    {
-        public float red;
-        public float green;
-        public float blue;
-        public float alpha;
-    }
+    public readonly record struct ClearColorFloat(
+        float Red,
+        float Green,
+        float Blue,
+        float Alpha
+    );
 
-    public struct ClearColorInt
-    {
-        public int red;
-        public int green;
-        public int blue;
-        public int alpha;
-    }
+    public readonly record struct ClearColorInt(
+        int Red,
+        int Green,
+        int Blue,
+        int Alpha
+    );
 
-    public struct ClearColorUInt
-    {
-        public uint red;
-        public uint green;
-        public uint blue;
-        public uint alpha;
-    }
+    public readonly record struct ClearColorUInt(
+        uint Red,
+        uint Green,
+        uint Blue,
+        uint Alpha
+    );
 
-    public union ClearColorValue(ClearColorFloat, ClearColorInt, ClearColorUInt);
+    public readonly union ClearColorValue(ClearColorFloat, ClearColorInt, ClearColorUInt);
 
-    public struct ClearDepthStencilValue
-    {
-        public float depth;
-        public uint stencil;
-    }
+    public readonly record struct ClearDepthStencilValue(
+        float Depth,
+        uint Stencil
+    );
 
     public enum AttachmentLoadOperation
     {
@@ -140,27 +129,24 @@ namespace Engine.Rendering
         DoNotCare
     }
 
-    public union ClearValue(ClearColorValue, ClearDepthStencilValue);
+    public readonly union ClearValue(ClearColorValue, ClearDepthStencilValue);
 
-    public struct RenderingAttachmentInfo
-    {
-        public AttachmentLoadOperation loadOperation;
-        public AttachmentStoreOperation storeOperation;
-        public ClearValue clearValue;
-    }
+    public readonly record struct RenderingAttachmentInfo(
+        AttachmentLoadOperation LoadOperation,
+        AttachmentStoreOperation StoreOperation,
+        ClearValue ClearValue
+    );
 
-    public ref struct RenderingInfo
-    {
-        public IFramebuffer framebuffer;
-        public ReadOnlySpan<RenderingAttachmentInfo> colorAttachments;
-        public RenderingAttachmentInfo? depthStencilAttachment;
-    }
+    public readonly record struct RenderingInfo(
+        IFramebuffer Framebuffer,
+        ReadOnlyMemory<RenderingAttachmentInfo> ColorAttachments,
+        RenderingAttachmentInfo? DepthStencilAttachment
+    );
 
-    public struct VertexBufferDesc
-    {
-        public IBuffer buffer;
-        public ulong offset;
-    }
+    public readonly record struct VertexBufferDesc(
+        IBuffer Buffer,
+        ulong Offset
+    );
 
     public enum IndexType
     {
@@ -169,7 +155,7 @@ namespace Engine.Rendering
     }
 
     [Flags]
-    public enum StencilFaceFlags
+    public enum StencilFace
     {
         None = 0,
         Front = 1 << 0,
@@ -177,7 +163,7 @@ namespace Engine.Rendering
     }
 
     [Flags]
-    public enum PipelineStageFlags
+    public enum PipelineStage
     {
         None = 0,
         DrawIndirect = 1 << 0,
@@ -203,7 +189,7 @@ namespace Engine.Rendering
     }
 
     [Flags]
-    public enum AccessFlags
+    public enum Access
     {
         None = 0,
         IndirectCommandRead = 1 << 0,
@@ -227,13 +213,12 @@ namespace Engine.Rendering
         ShaderStorageWrite = 1 << 18
     }
 
-    public struct MemoryBarrier
-    {
-        public PipelineStageFlags srcStageMask;
-        public AccessFlags srcAccessMask;
-        public PipelineStageFlags dstStageMask;
-        public AccessFlags dstAccessMask;
-    }
+    public readonly record struct MemoryBarrier(
+        PipelineStage SourceStageMask,
+        Access SourceAccessMask,
+        PipelineStage DestinationStageMask,
+        Access DestinationAccessMask
+    );
 
     public interface ICommandBuffer : IDisposable
     {
@@ -252,7 +237,7 @@ namespace Engine.Rendering
         void SetDepthBias(float depthBiasConstantFactor, float depthBiasClamp, float depthBiasSlopeFactor);
         void SetBlendConstants(float redBlendContstant, float greenBlendContstant, float blueBlendContstant, float alphaBlendContstant);
         void SetDepthBounds(float minDepthBounds, float maxDepthBounds);
-        void SetStencilOperationValues(StencilFaceFlags faceMask, uint compareMask, uint writeMask, uint reference);
+        void SetStencilOperationValues(StencilFace faceMask, uint compareMask, uint writeMask, uint reference);
 
         //PipelineBarrier
         void SetMemoryBarrier(in MemoryBarrier barrier);

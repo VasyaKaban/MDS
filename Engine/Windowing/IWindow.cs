@@ -1,5 +1,7 @@
 ﻿namespace Engine.Windowing
 {
+    public delegate void WindowEventHandler<A>(IWindow window, in A args) 
+        where A: allows ref struct;
 
     public interface IWindow : IDisposable
     {
@@ -14,21 +16,21 @@
 
         VideoMode GetCurrentDisplayVideoMode();
         IReadOnlyCollection<VideoMode> GetAvailableDisplayVideoModes();
-        void SetFullscreenMode(VideoMode videoMode);
+        void SetFullscreenMode(in VideoMode videoMode);
         void SetWindowedMode();
 
-        event Action<IWindow, WindowClosedEventArgs> Closed;
-        event Action<IWindow, WindowResizedEventArgs> Resized;
-        event Action<IWindow, WindowMovedEventArgs> Moved;
-        event Action<IWindow, WindowMouseFocusGainedEventArgs> MouseFocusGained;
-        event Action<IWindow, WindowMouseFocusLeftEventArgs> MouseFocusLeft;
-        event Action<IWindow, WindowKeyboardFocusGainedEventArgs> KeyboardFocusGained;
-        event Action<IWindow, WindowKeyboardFocusLeftEventArgs> KeyboardFocusLeft;
-        event Action<IWindow, WindowMouseCursorMovedEventArgs> MouseCursorMoved;
-        event Action<IWindow, WindowMouseButtonToggledEventArgs> MouseButtonToggled;
-        event Action<IWindow, WindowMouseWheelScrolledEventArgs> MouseWheelScrolled;
-        event Action<IWindow, WindowKeyboardKeyToggledEventArgs> KeyboardKeyToggled;
-        event Action<IWindow, WindowKeyboardTextInputtedEventArgs> KeyboardTextInputted;
-        event Action<IWindow, WindowDisplayChangedEventArgs> DisplayChanged;
+        event WindowEventHandler<WindowClosedEventArgs> Closed;
+        event WindowEventHandler<WindowResizedEventArgs> Resized;
+        event WindowEventHandler<WindowMovedEventArgs> Moved;
+        event WindowEventHandler<WindowMouseFocusGainedEventArgs> MouseFocusGained;
+        event WindowEventHandler<WindowMouseFocusLeftEventArgs> MouseFocusLeft;
+        event WindowEventHandler<WindowKeyboardFocusGainedEventArgs> KeyboardFocusGained;
+        event WindowEventHandler<WindowKeyboardFocusLeftEventArgs> KeyboardFocusLeft;
+        event WindowEventHandler<WindowMouseCursorMovedEventArgs> MouseCursorMoved;
+        event WindowEventHandler<WindowMouseButtonToggledEventArgs> MouseButtonToggled;
+        event WindowEventHandler<WindowMouseWheelScrolledEventArgs> MouseWheelScrolled;
+        event WindowEventHandler<WindowKeyboardKeyToggledEventArgs> KeyboardKeyToggled;
+        event WindowEventHandler<WindowKeyboardTextInputtedEventArgs> KeyboardTextInputted;
+        event WindowEventHandler<WindowDisplayChangedEventArgs> DisplayChanged;
     }
 }

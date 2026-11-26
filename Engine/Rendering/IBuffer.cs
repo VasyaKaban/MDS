@@ -1,7 +1,7 @@
 ﻿namespace Engine.Rendering
 {
     [Flags]
-    public enum BufferUsageFlags
+    public enum BufferUsage
     {
         None = 0,
         TransferSource = 1 << 0,
@@ -14,7 +14,7 @@
     }
 
     [Flags]
-    public enum BufferCPUMapAccessFlags
+    public enum BufferCPUMapAccess
     {
         None = 0,
         MapRead = 1 << 0,
@@ -29,29 +29,26 @@
      host cached   -> BufferCPUMapAccessFlags.MapRead
      */
 
-    public struct BufferCreateInfo
-    {
-        public ulong size;
-        public BufferUsageFlags usage;
-        public BufferCPUMapAccessFlags cpuMapAccess;
-    }
+    public readonly record struct BufferCreateInfo(
+         ulong Size,
+         BufferUsage Usage,
+         BufferCPUMapAccess CpuMapAccess
+    );
 
-    public struct BufferCopy
-    {
-        public ulong srcOffset;
-        public uint dstOffset;
-        public uint size;
-    }
+    public readonly record struct BufferCopy(
+        ulong SourceOffset,
+        uint DestinationOffset,
+        uint Size
+    );
 
-    public struct BufferInitialData
-    {
-        public ReadOnlyMemory<byte> data;
-        public ReadOnlyMemory<BufferCopy> regions;
-    }
+    public readonly record struct BufferInitialData(
+         ReadOnlyMemory<byte> Data,
+         ReadOnlyMemory<BufferCopy> Regions
+    );
 
     public interface IBuffer : IDisposable
     {
         IRenderingContext GetContext();
-        void GetCreateInfo(out BufferCreateInfo info);
+        BufferCreateInfo GetCreateInfo();
     }
 }

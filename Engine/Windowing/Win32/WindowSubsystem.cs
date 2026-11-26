@@ -21,9 +21,6 @@ namespace Engine.Windowing.Win32
         public WindowSubsystem()
         {
             hInstance = PInvoke.GetModuleHandle((PCWSTR)null);
-            eventQueue = new();
-            scanCodeToKeyMapping = new();
-            keyToScanCodeMapping = new();
 
             int layoutCount = PInvoke.GetKeyboardLayoutList(Span<HKL>.Empty);
             if (layoutCount == 0)
@@ -112,6 +109,27 @@ namespace Engine.Windowing.Win32
             return PInvoke.GetAsyncKeyState((int)vk) < 0;
         }
 
+        public void AcquireMouseCursor(IWindow window)
+        { 
+            //set current window to clip
+            mouseCursorAcquireWindow = window;
+
+            //get window extent and position
+            var rect = ((Window)window).GetScreenClientRect();
+
+            //clip cursor
+            if (rect.bottom == 0 || rect.right == 0)//minimized window or very small one
+                PInvoke.ClipCursor(null);
+            else
+                PInvoke.ClipCursor(rect);
+        }
+
+        public void ReleaseMouseCursor()
+        {
+            PInvoke.ClipCursor(null);
+            mouseCursorAcquireWindow = null;
+        }
+
         public void PollEvents()
         {
             BOOL res;
@@ -129,7 +147,7 @@ namespace Engine.Windowing.Win32
             while (eventQueue.Count > 0)
             {
                 Event winEvent = eventQueue.Dequeue();
-                winEvent.win.HandleEvent(winEvent.args);
+                winEvent.Window.HandleEvent(winEvent.Args);
             }
         }
 
@@ -141,55 +159,51 @@ namespace Engine.Windowing.Win32
             return null;
         }
 
+        private readonly record struct Event(Window Window, EventArgs Args);
+
         private void EnqueueEvent(Event winEvent)
         {
             eventQueue.Enqueue(winEvent);
         }
 
-        private struct Event
-        {
-            public Window win;
-            public WindowEventArgs args;
-        }
-
-        private static MouseButtons GetMouseButtonsFromWParam(WPARAM wParam)
+        private static MouseButton GetMouseButtonsFromWParam(WPARAM wParam)
         {
             MODIFIERKEYS_FLAGS rawButtons = PInvoke.GET_KEYSTATE_WPARAM(wParam);
 
-            MouseButtons buttons = 0;
+            MouseButton buttons = 0;
             if (rawButtons.HasFlag(MODIFIERKEYS_FLAGS.MK_LBUTTON))
-                buttons |= MouseButtons.Left;
+                buttons |= MouseButton.Left;
             if (rawButtons.HasFlag(MODIFIERKEYS_FLAGS.MK_RBUTTON))
-                buttons |= MouseButtons.Right;
+                buttons |= MouseButton.Right;
             if (rawButtons.HasFlag(MODIFIERKEYS_FLAGS.MK_MBUTTON))
-                buttons |= MouseButtons.Middle;
+                buttons |= MouseButton.Middle;
             if (rawButtons.HasFlag(MODIFIERKEYS_FLAGS.MK_XBUTTON1))
-                buttons |= MouseButtons.X1;
+                buttons |= MouseButton.X1;
             if (rawButtons.HasFlag(MODIFIERKEYS_FLAGS.MK_XBUTTON2))
-                buttons |= MouseButtons.X2;
+                buttons |= MouseButton.X2;
 
             return buttons;
         }
 
-        private static KeyboardModifiers GetKeyboardModifiers()
+        private static KeyboardModifier GetKeyboardModifiers()
         {
-            KeyboardModifiers modifiers = 0;
+            KeyboardModifier modifiers = 0;
             if (PInvoke.GetAsyncKeyState((int)VIRTUAL_KEY.VK_LSHIFT) < 0)
-                modifiers |= KeyboardModifiers.LeftShift;
+                modifiers |= KeyboardModifier.LeftShift;
             if (PInvoke.GetAsyncKeyState((int)VIRTUAL_KEY.VK_RSHIFT) < 0)
-                modifiers |= KeyboardModifiers.RightShift;
+                modifiers |= KeyboardModifier.RightShift;
             if (PInvoke.GetAsyncKeyState((int)VIRTUAL_KEY.VK_LCONTROL) < 0)
-                modifiers |= KeyboardModifiers.LeftControl;
+                modifiers |= KeyboardModifier.LeftControl;
             if (PInvoke.GetAsyncKeyState((int)VIRTUAL_KEY.VK_RCONTROL) < 0)
-                modifiers |= KeyboardModifiers.RightControl;
+                modifiers |= KeyboardModifier.RightControl;
             if (PInvoke.GetAsyncKeyState((int)VIRTUAL_KEY.VK_LMENU) < 0)
-                modifiers |= KeyboardModifiers.LeftAlt;
+                modifiers |= KeyboardModifier.LeftAlt;
             if (PInvoke.GetAsyncKeyState((int)VIRTUAL_KEY.VK_RMENU) < 0)
-                modifiers |= KeyboardModifiers.RightAlt;
+                modifiers |= KeyboardModifier.RightAlt;
             if (PInvoke.GetAsyncKeyState((int)VIRTUAL_KEY.VK_LWIN) < 0)
-                modifiers |= KeyboardModifiers.LeftGUI;
+                modifiers |= KeyboardModifier.LeftGUI;
             if (PInvoke.GetAsyncKeyState((int)VIRTUAL_KEY.VK_RWIN) < 0)
-                modifiers |= KeyboardModifiers.RightGUI;
+                modifiers |= KeyboardModifier.RightGUI;
 
             return modifiers;
         }
@@ -226,31 +240,37 @@ namespace Engine.Windowing.Win32
                     {
                         case PInvoke.WM_CLOSE:
                             win.IsClosed = true;
-                            subsystem.EnqueueEvent(new Event { win = win, args = new WindowClosedEventArgs(timeMs) });
+                            subsystem.EnqueueEvent(new Event { Window = win, Args = new WindowClosedEventArgs(timeMs) });
                             break;
                         case PInvoke.WM_SIZE:
                             uint width = PInvoke.LOWORD((uint)lParam.Value);
                             uint height = PInvoke.HIWORD((uint)lParam.Value);
 
                             var extent = new WindowExtent(width, height);
-                            subsystem.EnqueueEvent(new Event { win = win, args = new WindowResizedEventArgs(timeMs, extent) });
+                            subsystem.EnqueueEvent(new Event { Window = win, Args = new WindowResizedEventArgs(timeMs, extent) });
 
                             win.UpdateWindowedModeState();
+
+                            if (subsystem.mouseCursorAcquireWindow == win)
+                                subsystem.AcquireMouseCursor(win); 
                             break;
                         case PInvoke.WM_MOVE:
                             int x = PInvoke.GET_X_LPARAM(lParam);
                             int y = PInvoke.GET_Y_LPARAM(lParam);
 
                             var position = new WindowPosition(x, y);
-                            subsystem.EnqueueEvent(new Event { win = win, args = new WindowMovedEventArgs(timeMs, position) });
+                            subsystem.EnqueueEvent(new Event { Window = win, Args = new WindowMovedEventArgs(timeMs, position) });
 
                             win.UpdateWindowedModeState();
+
+                            if (subsystem.mouseCursorAcquireWindow == win)
+                                subsystem.AcquireMouseCursor(win);
                             break;
                         case PInvoke.WM_MOUSEMOVE:
                             if (PInvoke.GetActiveWindow() == hWnd)
                             {
                                 WindowPosition cursorPosition = new WindowPosition(PInvoke.GET_X_LPARAM(lParam), PInvoke.GET_Y_LPARAM(lParam));
-                                MouseButtons buttons = GetMouseButtonsFromWParam(wParam);
+                                MouseButton buttons = GetMouseButtonsFromWParam(wParam);
 
                                 if (!win.IsMouseCaptured)//emit focus gain
                                 {
@@ -265,27 +285,27 @@ namespace Engine.Windowing.Win32
 
                                     win.CaptureMouse(cursorPosition);
 
-                                    subsystem.EnqueueEvent(new Event { win = win, args = new WindowMouseFocusGainedEventArgs(timeMs, cursorPosition, buttons) });
+                                    subsystem.EnqueueEvent(new Event { Window = win, Args = new WindowMouseFocusGainedEventArgs(timeMs, cursorPosition, buttons) });
                                 }
                                 else
                                 {
                                     WindowPosition deltaPosition = new WindowPosition(cursorPosition.X - win.MouseCursorPosition.X, cursorPosition.Y - win.MouseCursorPosition.Y);
                                     win.CaptureMouse(cursorPosition);
 
-                                    subsystem.EnqueueEvent(new Event { win = win, args = new WindowMouseCursorMovedEventArgs(timeMs, cursorPosition, deltaPosition, buttons) });
+                                    subsystem.EnqueueEvent(new Event { Window = win, Args = new WindowMouseCursorMovedEventArgs(timeMs, cursorPosition, deltaPosition, buttons) });
                                 }
                             }
                             break;
                         case PInvoke.WM_MOUSELEAVE:
                             win.UncaptureMouse();
 
-                            subsystem.EnqueueEvent(new Event { win = win, args = new WindowMouseFocusLeftEventArgs(timeMs) });
+                            subsystem.EnqueueEvent(new Event { Window = win, Args = new WindowMouseFocusLeftEventArgs(timeMs) });
                             break;
                         case PInvoke.WM_SETFOCUS:
-                            subsystem.EnqueueEvent(new Event { win = win, args = new WindowKeyboardFocusGainedEventArgs(timeMs) });
+                            subsystem.EnqueueEvent(new Event { Window = win, Args = new WindowKeyboardFocusGainedEventArgs(timeMs) });
                             break;
                         case PInvoke.WM_KILLFOCUS:
-                            subsystem.EnqueueEvent(new Event { win = win, args = new WindowKeyboardFocusLeftEventArgs(timeMs) });
+                            subsystem.EnqueueEvent(new Event { Window = win, Args = new WindowKeyboardFocusLeftEventArgs(timeMs) });
                             break;
                         case PInvoke.WM_LBUTTONDOWN:
                         case PInvoke.WM_LBUTTONUP:
@@ -293,11 +313,11 @@ namespace Engine.Windowing.Win32
                             subsystem.EnqueueEvent(
                                 new Event
                                 {
-                                    win = win,
-                                    args = new WindowMouseButtonToggledEventArgs(
+                                    Window = win,
+                                    Args = new WindowMouseButtonToggledEventArgs(
                                         timeMs,
                                         new WindowPosition(PInvoke.GET_X_LPARAM(lParam), PInvoke.GET_Y_LPARAM(lParam)),
-                                        MouseButtons.Left,
+                                        MouseButton.Left,
                                         (uint)(uMsg == PInvoke.WM_LBUTTONDBLCLK ? 2 : 1),
                                         uMsg != PInvoke.WM_LBUTTONUP)
                                 });
@@ -308,11 +328,11 @@ namespace Engine.Windowing.Win32
                             subsystem.EnqueueEvent(
                                 new Event
                                 {
-                                    win = win,
-                                    args = new WindowMouseButtonToggledEventArgs(
+                                    Window = win,
+                                    Args = new WindowMouseButtonToggledEventArgs(
                                         timeMs,
                                         new WindowPosition(PInvoke.GET_X_LPARAM(lParam), PInvoke.GET_Y_LPARAM(lParam)),
-                                        MouseButtons.Right,
+                                        MouseButton.Right,
                                         (uint)(uMsg == PInvoke.WM_RBUTTONDBLCLK ? 2 : 1),
                                         uMsg != PInvoke.WM_RBUTTONUP)
                                 });
@@ -323,11 +343,11 @@ namespace Engine.Windowing.Win32
                             subsystem.EnqueueEvent(
                                 new Event
                                 {
-                                    win = win,
-                                    args = new WindowMouseButtonToggledEventArgs(
+                                    Window = win,
+                                    Args = new WindowMouseButtonToggledEventArgs(
                                         timeMs,
                                         new WindowPosition(PInvoke.GET_X_LPARAM(lParam), PInvoke.GET_Y_LPARAM(lParam)),
-                                        MouseButtons.Middle,
+                                        MouseButton.Middle,
                                         (uint)(uMsg == PInvoke.WM_MBUTTONDBLCLK ? 2 : 1),
                                         uMsg != PInvoke.WM_MBUTTONUP)
                                 });
@@ -338,11 +358,11 @@ namespace Engine.Windowing.Win32
                             subsystem.EnqueueEvent(
                                 new Event
                                 {
-                                    win = win,
-                                    args = new WindowMouseButtonToggledEventArgs(
+                                    Window = win,
+                                    Args = new WindowMouseButtonToggledEventArgs(
                                         timeMs,
                                         new WindowPosition(PInvoke.GET_X_LPARAM(lParam), PInvoke.GET_Y_LPARAM(lParam)),
-                                        PInvoke.HIWORD((uint)wParam.Value) == PInvoke.XBUTTON1 ? MouseButtons.X1 : MouseButtons.X2,
+                                        PInvoke.HIWORD((uint)wParam.Value) == PInvoke.XBUTTON1 ? MouseButton.X1 : MouseButton.X2,
                                         (uint)(uMsg == PInvoke.WM_XBUTTONDBLCLK ? 2 : 1),
                                         uMsg != PInvoke.WM_XBUTTONUP)
                                 });
@@ -351,8 +371,8 @@ namespace Engine.Windowing.Win32
                             subsystem.EnqueueEvent(
                                 new Event
                                 {
-                                    win = win,
-                                    args = new WindowMouseWheelScrolledEventArgs(
+                                    Window = win,
+                                    Args = new WindowMouseWheelScrolledEventArgs(
                                         timeMs,
                                         new WindowPosition(PInvoke.GET_X_LPARAM(lParam), PInvoke.GET_Y_LPARAM(lParam)),
                                         GetMouseButtonsFromWParam(wParam),
@@ -404,8 +424,8 @@ namespace Engine.Windowing.Win32
                             subsystem.EnqueueEvent(
                                 new Event
                                 {
-                                    win = win,
-                                    args = new WindowKeyboardKeyToggledEventArgs(
+                                    Window = win,
+                                    Args = new WindowKeyboardKeyToggledEventArgs(
                                         timeMs,
                                         ps2ScanCode,
                                         GetKeyboardModifiers(),
@@ -423,8 +443,8 @@ namespace Engine.Windowing.Win32
                                     subsystem.EnqueueEvent(
                                         new Event
                                         {
-                                            win = win,
-                                            args = new WindowKeyboardTextInputtedEventArgs(
+                                            Window = win,
+                                            Args = new WindowKeyboardTextInputtedEventArgs(
                                                 timeMs,
                                                 GetKeyboardModifiers(),
                                                 text)
@@ -441,9 +461,23 @@ namespace Engine.Windowing.Win32
                             subsystem.EnqueueEvent(
                                 new Event
                                 {
-                                    win = win,
-                                    args = new WindowDisplayChangedEventArgs(timeMs)
+                                    Window = win,
+                                    Args = new WindowDisplayChangedEventArgs(timeMs)
                                 });
+                            break;
+                        case PInvoke.WM_NCHITTEST:
+                            if (win == subsystem.mouseCursorAcquireWindow)
+                                return (LRESULT)((nint)PInvoke.HTCLIENT);
+                            break;
+                        case PInvoke.WM_ACTIVATE:
+                            if (win == subsystem.mouseCursorAcquireWindow)
+                            {
+                                //unclip cursor if we go from clipping window but keep current window
+                                if (PInvoke.LOWORD((uint)wParam.Value) == PInvoke.WA_INACTIVE)
+                                    PInvoke.ClipCursor(null);
+                                else
+                                    subsystem.AcquireMouseCursor(win);
+                            }
                             break;
                     }
                 }
@@ -454,11 +488,13 @@ namespace Engine.Windowing.Win32
             return (LRESULT)0;
         }
 
-        private HINSTANCE hInstance;
-        private Queue<Event> eventQueue;
+        private HINSTANCE hInstance = HINSTANCE.Null;
+        private Queue<Event> eventQueue = new();
 
-        private string?[] virtualKeyToNameMapping;
-        private Dictionary<uint, KeyboardKey> scanCodeToKeyMapping;
-        private Dictionary<KeyboardKey, uint> keyToScanCodeMapping;
+        private string?[] virtualKeyToNameMapping = new string?[256];
+        private Dictionary<uint, KeyboardKey> scanCodeToKeyMapping = [];
+        private Dictionary<KeyboardKey, uint> keyToScanCodeMapping = [];
+
+        private IWindow? mouseCursorAcquireWindow = null;
     }
 }

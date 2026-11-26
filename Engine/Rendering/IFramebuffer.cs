@@ -4,11 +4,10 @@ using System.Text;
 
 namespace Engine.Rendering
 {
-    public struct FrambufferCreateInfo
-    {
-        public ReadOnlyMemory<IImage> colorAttachments;
-        public IImage? depthStencilAttachment;
-    }
+    public readonly record struct FrambufferCreateInfo(
+        ReadOnlyMemory<IImage> ColorAttachments,
+        IImage? DepthStencilAttachment
+    );
 
     public interface IFramebuffer : IDisposable
     {

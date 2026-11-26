@@ -1,40 +1,25 @@
 ﻿namespace Engine.Windowing
 {
-    public record struct WindowExtent(uint Width, uint Height);
+    public readonly record struct WindowExtent(uint Width, uint Height);
 
-    public record struct WindowPosition(int X, int Y)
+    public readonly record struct WindowPosition(int X, int Y)
     {
         public const int DEFAULT_POSITION = int.MaxValue;
     }
 
-    public struct WindowCreateInfo
-    {
-        public string Title { get; set; }
-        public WindowExtent Extent { get; set; }//client rect
-        public bool TextInputEnabled { get; set; }
-    }
+    public readonly record struct WindowCreateInfo(
+        string Title,
+        WindowExtent Extent,
+        bool TextInputEnabled);
 
-    public closed class WindowEventArgs(ulong timeMs)
-    {
-        public ulong TimeMs { get; } = timeMs;
-    }
+    public readonly record struct WindowClosedEventArgs(ulong TimeMs);
 
-    public class WindowClosedEventArgs(ulong timeMs) : WindowEventArgs(timeMs)
-    {
-    }
+    public readonly record struct WindowResizedEventArgs(ulong TimeMs, WindowExtent Extent);
 
-    public class WindowResizedEventArgs(ulong timeMs, WindowExtent extent) : WindowEventArgs(timeMs)
-    {
-        public WindowExtent Extent { get; } = extent;
-    }
-
-    public class WindowMovedEventArgs(ulong timeMs, WindowPosition position) : WindowEventArgs(timeMs)
-    {
-        public WindowPosition Position { get; } = position;
-    }
+    public readonly record struct WindowMovedEventArgs(ulong TimeMs, WindowPosition Position);
 
     [Flags]
-    public enum MouseButtons : uint
+    public enum MouseButton : uint
     {
         None = 0,
         Left = 1 << 0,
@@ -44,63 +29,39 @@
         X2 = 1 << 4
     }
 
-    public class WindowMouseFocusGainedEventArgs(ulong timeMs, WindowPosition cursorPosition, MouseButtons buttons) : WindowEventArgs(timeMs)
-    {
-        public WindowPosition CursorPosition { get; } = cursorPosition;
-        public MouseButtons Buttons { get; } = buttons;
-    }
+    public readonly record struct WindowMouseFocusGainedEventArgs(
+        ulong TimeMs,
+        WindowPosition CursorPosition,
+        MouseButton Buttons);
 
-    public class WindowMouseFocusLeftEventArgs(ulong timeMs) : WindowEventArgs(timeMs)
-    {
-    }
+    public readonly record struct WindowMouseFocusLeftEventArgs(ulong TimeMs);
 
-    public class WindowKeyboardFocusGainedEventArgs(ulong timeMs) : WindowEventArgs(timeMs)
-    {
-    }
+    public readonly record struct WindowKeyboardFocusGainedEventArgs(ulong TimeMs);
 
-    public class WindowKeyboardFocusLeftEventArgs(ulong timeMs) : WindowEventArgs(timeMs)
-    {
-    }
+    public readonly record struct WindowKeyboardFocusLeftEventArgs(ulong TimeMs);
 
-    public class WindowMouseCursorMovedEventArgs(
-        ulong timeMs,
-        WindowPosition cursorPosition,
-        WindowPosition directionDelta,
-        MouseButtons buttons) : WindowEventArgs(timeMs)
-    {
-        public WindowPosition CursorPosition { get; } = cursorPosition;
-        public WindowPosition DirectionDelta { get; } = directionDelta;
-        public MouseButtons Buttons { get; } = buttons;
-    }
+    public readonly record struct WindowMouseCursorMovedEventArgs(
+        ulong TimeMs,
+        WindowPosition CursorPosition,
+        WindowPosition DirectionDelta,
+        MouseButton Buttons);
 
-    public class WindowMouseButtonToggledEventArgs(
-        ulong timeMs,
-        WindowPosition cursorPosition,
-        MouseButtons button,
-        uint clicks,
-        bool isPressed) : WindowEventArgs(timeMs)
-    {
-        public WindowPosition CursorPosition { get; } = cursorPosition;
-        public MouseButtons Button { get; } = button;
-        public uint Clicks { get; } = clicks;
-        public bool IsPressed { get; } = isPressed;
-    }
+    public readonly record struct WindowMouseButtonToggledEventArgs(
+        ulong TimeMs,
+        WindowPosition CursorPosition,
+        MouseButton Button,
+        uint Clicks,
+        bool IsPressed);
 
-    public class WindowMouseWheelScrolledEventArgs(
-        ulong timeMs,
-        WindowPosition cursorPosition,
-        MouseButtons buttons,
-        float horizontalScrollDelta,
-        float verticalScrollDelta) : WindowEventArgs(timeMs)
-    {
-        public WindowPosition CursorPosition { get; } = cursorPosition;
-        public MouseButtons Buttons { get; } = buttons;
-        public float HorizontalScrollDelta { get; } = horizontalScrollDelta;
-        public float VerticalScrollDelta { get; } = verticalScrollDelta;
-    }
+    public readonly record struct WindowMouseWheelScrolledEventArgs(
+        ulong TimeMs,
+        WindowPosition CursorPosition,
+        MouseButton Buttons,
+        float HorizontalScrollDelta,
+        float VerticalScrollDelta);
 
     [Flags]
-    public enum KeyboardModifiers : uint
+    public enum KeyboardModifier : uint
     {
         None = 0,
         LeftShift = 1 << 0,
@@ -221,32 +182,37 @@
         WWWFavorites
     }
 
-    public union KeyboardKey(SpecialKey, string);//either predefined key or key name based on available keyboard layouts
+    public readonly union KeyboardKey(SpecialKey, string);//either predefined key or key name based on available keyboard layouts
 
-    public class WindowKeyboardKeyToggledEventArgs(
-        ulong timeMs,
-        uint scanCode,
-        KeyboardModifiers modifiers,
-        KeyboardKey key,
-        bool isPressed,
-        uint repeatCount) : WindowEventArgs(timeMs)
-    {
-        public uint ScanCode { get; } = scanCode;
-        public KeyboardModifiers Modifiers { get; } = modifiers;
-        public KeyboardKey Key { get; } = key;
-        public bool IsPressed { get; } = isPressed;
-        public uint RepeatCount { get; } = repeatCount;
-    }
+    public readonly record struct WindowKeyboardKeyToggledEventArgs(
+        ulong TimeMs,
+        uint ScanCode,
+        KeyboardModifier Modifiers,
+        KeyboardKey Key,
+        bool IsPressed,
+        uint RepeatCount);
 
-    public class WindowKeyboardTextInputtedEventArgs(ulong timeMs, KeyboardModifiers modifiers, string text) : WindowEventArgs(timeMs)
-    {
-        public KeyboardModifiers Modifiers { get; } = modifiers;
-        public string Text { get; } = text;
-    }
+    public readonly record struct WindowKeyboardTextInputtedEventArgs(
+        ulong TimeMs,
+        KeyboardModifier Modifiers,
+        string Text);
 
-    public record VideoMode(uint Width, uint Height, uint RefreshRate);
+    public readonly record struct VideoMode(uint Width, uint Height, uint RefreshRate);
 
-    public class WindowDisplayChangedEventArgs(ulong timeMs) : WindowEventArgs(timeMs)
-    {
-    }
+    public readonly record struct WindowDisplayChangedEventArgs(ulong TimeMs);
+
+    public readonly union EventArgs(
+        WindowClosedEventArgs,
+        WindowResizedEventArgs,
+        WindowMovedEventArgs,
+        WindowMouseFocusGainedEventArgs,
+        WindowMouseFocusLeftEventArgs,
+        WindowKeyboardFocusGainedEventArgs,
+        WindowKeyboardFocusLeftEventArgs,
+        WindowMouseCursorMovedEventArgs,
+        WindowMouseButtonToggledEventArgs,
+        WindowMouseWheelScrolledEventArgs,
+        WindowKeyboardKeyToggledEventArgs,
+        WindowKeyboardTextInputtedEventArgs,
+        WindowDisplayChangedEventArgs);
 }
