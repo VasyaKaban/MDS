@@ -106,11 +106,10 @@ namespace Engine.Rendering
         ShaderResourceMinLod
     }
 
-    //TODO: check availability of each limit
     public enum RenderingContextIntLimit
     {
         MinTexelOffset,
-        MinTexelGatherOffset,
+        MinTexelGatherOffset
     }
 
     public enum RenderingContextUIntLimit
@@ -120,28 +119,18 @@ namespace Engine.Rendering
         MaxImageDimension3D,
         MaxImageDimensionCube,
         MaxImageArrayLayers,
-        MaxTexelBufferElements,
         MaxUniformBufferRange,
         MaxStorageBufferRange,
-        MaxMemoryAllocationCount,
         MaxPushConstantsSize,
-        MaxSamplerAllocationCount,
-        MaxBoundDescriptorSets,
-        MaxPerStageDescriptorSamplers,
-        MaxPerStageDescriptorUniformBuffers,
+        MaxPerStageDescriptorUniformBuffers,//per stage
         MaxPerStageDescriptorStorageBuffers,
         MaxPerStageDescriptorSampledImages,
         MaxPerStageDescriptorStorageImages,
-        MaxPerStageDescriptorInputAttachments,
         MaxPerStageResources,
-        MaxDescriptorSetSamplers,
-        MaxDescriptorSetUniformBuffers,
-        MaxDescriptorSetUniformBuffersDynamic,
-        MaxDescriptorSetStorageBuffers,
-        MaxDescriptorSetStorageBuffersDynamic,
-        MaxDescriptorSetSampledImages,
-        MaxDescriptorSetStorageImages,
-        MaxDescriptorSetInputAttachments,
+        MaxAllStagesUniformBuffers,//for the all stages
+        MaxAllStagesStorageBuffers,
+        MaxAllStagesSampledImages,
+        MaxAllStagesStorageImages,
         MaxVertexInputAttributes,
         MaxVertexInputBindings,
         MaxVertexInputAttributeOffset,
@@ -172,15 +161,11 @@ namespace Engine.Rendering
         MaxComputeWorkGroupSizeX,
         MaxComputeWorkGroupSizeY,
         MaxComputeWorkGroupSizeZ,
-        SubPixelPrecisionBits,
-        SubTexelPrecisionBits,
-        MipmapPrecisionBits,
         MaxDrawIndexedIndexValue,
         MaxDrawIndirectCount,
         MaxViewports,
         MaxViewportWidth,
         MaxViewportHeight,
-        ViewportSubPixelBits,
         MaxTexelOffset,
         MaxTexelGatherOffset,
         SubPixelInterpolationOffsetBits,
@@ -192,7 +177,11 @@ namespace Engine.Rendering
         MaxClipDistances,
         MaxCullDistances,
         MaxCombinedClipAndCullDistances,
-        DiscreteQueuePriorities,
+        MinMemoryMapAlignment,
+        MinUniformBufferOffsetAlignment,
+        MinStorageBufferOffsetAlignment,
+        OptimalBufferCopyOffsetAlignment,
+        OptimalBufferCopyRowPitchAlignment
     }
 
     public enum RenderingContextFloatLimit
@@ -203,26 +192,12 @@ namespace Engine.Rendering
         ViewportBoundsRangeEnd,
         MinInterpolationOffset,
         MaxInterpolationOffset,
-        TimestampPeriod,
         PointSizeRangeStart,
         PointSizeRangeEnd,
         LineWidthRangeStart,
         LineWidthRangeEnd,
         PointSizeGranularity,
-        LineWidthGranularity,
-    }
-
-    public enum RenderingContextUlongLimit
-    {
-        BufferImageGranularity,
-        SparseAddressSpaceSize,
-        MinMemoryMapAlignment,
-        MinTexelBufferOffsetAlignment,
-        MinUniformBufferOffsetAlignment,
-        MinStorageBufferOffsetAlignment,
-        OptimalBufferCopyOffsetAlignment,
-        OptimalBufferCopyRowPitchAlignment,
-        NonCoherentAtomSize
+        LineWidthGranularity
     }
 
     public enum RenderingContextSampleCountLimit
@@ -230,19 +205,11 @@ namespace Engine.Rendering
         FramebufferColorSampleCounts,
         FramebufferDepthSampleCounts,
         FramebufferStencilSampleCounts,
-        FramebufferNoAttachmentsSampleCounts,
         SampledImageColorSampleCounts,
         SampledImageIntegerSampleCounts,
         SampledImageDepthSampleCounts,
         SampledImageStencilSampleCounts,
         StorageImageSampleCounts,
-    }
-
-    public enum RenderingContextBoolLimit
-    {
-        TimestampComputeAndGraphics,
-        StrictLines,
-        StandardSampleLocations,
     }
 
     public interface IRenderingContext : IDisposable
@@ -275,12 +242,11 @@ namespace Engine.Rendering
         //Properties/Features
         bool IsFeatureSupported(RenderingContextFeature feature);
         string GetDeviceName();
-        int GetLimit(RenderingContextIntLimit limit);
-        uint GetLimit(RenderingContextUIntLimit limit);
+
+        long GetLimit(RenderingContextIntLimit limit);
+        ulong GetLimit(RenderingContextUIntLimit limit);
         float GetLimit(RenderingContextFloatLimit limit);
-        ulong GetLimit(RenderingContextUlongLimit limit);
         SampleCount GetLimit(RenderingContextSampleCountLimit limit);
-        bool GetLimit(RenderingContextBoolLimit limit);
 
         //Query
         FormatFeature QueryBufferFormatSupport(Format format);
