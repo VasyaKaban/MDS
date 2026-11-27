@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace OpenGLGenerator
+﻿namespace OpenGLGenerator
 {
     internal class TrimmedSpec
     {
@@ -14,8 +10,8 @@ namespace OpenGLGenerator
     internal record TrimmerInfo(
         string Api,
         string? ProfilePostfix,
-        int MinorVersion,
         int MajorVersion,
+        int MinorVersion,
         List<string> Extensions);
 
     /*
@@ -43,18 +39,25 @@ namespace OpenGLGenerator
             string? requireProfile = info.ProfilePostfix;
             string? removeProfile = info.ProfilePostfix;
 
+            //Explicitly add all types. Although require and remove blocks have <type> elements they do not use them at all
+            foreach (var (key, type) in spec.Types)
+            {
+                trimSpec.Types.Add(key, type);
+            }
+
             foreach (var (_, feature) in spec.Features.Where(f => f.Value.Api == info.Api))
             {
                 if (!(feature.MajorVersion <= info.MajorVersion && feature.MinorVersion <= info.MinorVersion))
                     continue;
 
-                foreach(var req in feature.Requires)
+                foreach (var req in feature.Requires)
                 {
                     //skip Api check
                     //but check profile
-                    if(requireProfile is null || req.Profile is null || req.Profile == requireProfile)
+                    if (requireProfile is null || req.Profile is null || req.Profile == requireProfile)
                     {
                         //insert into trimSpec
+                        ProcessRequireBlock(info.Api, spec, trimSpec, req);
                     }
                 }
 
@@ -65,6 +68,7 @@ namespace OpenGLGenerator
                     if (requireProfile is null || rem.Profile is null || rem.Profile == requireProfile)
                     {
                         //remove from trimSpec
+                        ProcessRemoveBlock(spec, trimSpec, rem);
                     }
                 }
             }
@@ -82,6 +86,7 @@ namespace OpenGLGenerator
                     if ((req.Api is null || req.Api == info.Api) && (requireProfile is null || req.Profile is null || req.Profile == requireProfile))
                     {
                         //insert into trimSpec
+                        ProcessRequireBlock(info.Api, spec, trimSpec, req);
                     }
                 }
 
@@ -90,11 +95,58 @@ namespace OpenGLGenerator
                     if ((rem.Api is null || rem.Api == info.Api) && (requireProfile is null || rem.Profile is null || rem.Profile == requireProfile))
                     {
                         //remove from trimSpec
+                        ProcessRemoveBlock(spec, trimSpec, rem);
                     }
                 }
             }
 
             return trimSpec;
+        }
+
+        private static void ProcessRequireBlock(string api, Spec spec, TrimmedSpec trimSpec, RequireBlock req)
+        {
+            /*foreach (string key in req.Types)
+            {
+                Type type = spec.Types[key];
+                string value = type.Values switch
+                {
+                    string singleValue => singleValue,
+                    Dictionary<string, string> dictValue => dictValue[api]
+                };
+
+                trimSpec.Types.TryAdd(key, new Type(key, value));
+            }*/
+
+            foreach (string key in req.Enums)
+            {
+                Enum enumObj = spec.Enums[key];
+                string value = enumObj.Values switch
+                {
+                    string singleValue => singleValue,
+                    Dictionary<string, string> dictValue => dictValue[api]
+                };
+
+                trimSpec.Enums.TryAdd(key, new Enum(key, value, enumObj.Alias));
+            }
+
+            foreach (string key in req.Commands)
+            {
+                Command command = spec.Commands[key];
+
+                trimSpec.Commands.TryAdd(key, command);
+            }
+        }
+
+        private static void ProcessRemoveBlock(Spec spec, TrimmedSpec trimSpec, RemoveBlock req)
+        {
+            //foreach (string key in req.Types)
+            //    trimSpec.Types.Remove(key);
+
+            foreach (string key in req.Enums)
+                trimSpec.Enums.Remove(key);
+
+            foreach (string key in req.Commands)
+                trimSpec.Commands.Remove(key);
         }
     }
 }

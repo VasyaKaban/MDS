@@ -1,8 +1,4 @@
-﻿using System.Collections.Frozen;
-using System.Collections.Immutable;
-using System.Diagnostics;
-using System.Text.RegularExpressions;
-using System.Xml;
+﻿using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
 namespace OpenGLGenerator
@@ -15,19 +11,19 @@ namespace OpenGLGenerator
 
     internal record CommandArgument(string Type, string Name);
 
-    internal record Command(string Name, string ReturnType, List<CommandArgument> Arguments, string Alias);
+    internal record Command(string Name, string ReturnType, List<CommandArgument> Arguments, string? Alias);
 
     internal record RequireBlock(
         string? Profile,
         string? Api,
-        HashSet<string> Types,
+        //HashSet<string> Types,
         HashSet<string> Enums,
         HashSet<string> Commands);
 
     internal record RemoveBlock(
         string? Profile,
         string? Api,
-        HashSet<string> Types,
+        //HashSet<string> Types,
         HashSet<string> Enums,
         HashSet<string> Commands);
 
@@ -76,13 +72,7 @@ namespace OpenGLGenerator
             {
                 if (!spec.Types.ContainsKey(type.Name))
                 {
-                    ApiValue apiValue = type.Api switch
-                    {
-                        null => type.Value,
-                        _ => new Dictionary<string, string> { { type.Api!, type.Value } }
-                    };
-
-                    spec.Types.Add(type.Name, new Type(type.Name, apiValue));
+                    spec.Types.Add(type.Name, new Type(type.Name, CreateApiValue(type.Api, type.Value)));
                 }
                 else
                 {
@@ -107,13 +97,7 @@ namespace OpenGLGenerator
             {
                 if (!spec.Enums.ContainsKey(enumObj.Name))
                 {
-                    ApiValue apiValue = enumObj.Api switch
-                    {
-                        null => enumObj.Value,
-                        _ => new Dictionary<string, string> { { enumObj.Api!, enumObj.Value } }
-                    };
-
-                    spec.Enums.Add(enumObj.Name, new Enum(enumObj.Name, apiValue, enumObj.Alias));
+                    spec.Enums.Add(enumObj.Name, new Enum(enumObj.Name, CreateApiValue(enumObj.Api, enumObj.Value), enumObj.Alias));
                 }
                 else
                 {
@@ -126,159 +110,94 @@ namespace OpenGLGenerator
 
             var commands = from commandsElement in registryElement.Elements("commands")
                            from commandElement in commandsElement.Elements("command")
-                           select new
-                           {
-                               RetunType = string.Concat(commandElement.Element("proto")!.Nodes().Select(n =>
-                               {
-                                   if (n is XElement e && e.Name != "name")
-                                       return e.Value;
-                                   else if (n is XText t)
-                                       return t.Value;
-                                   else
-                                       return "";
-                               })),
-                               Name = commandElement.Element("proto")!.Element("name")!.Value,
-                               Alias = commandElement.Element("alias")?.Value,
-                               Params = from paramElement in commandElement.Elements("param")
-                                        select new
-                                        {
-                                            Name = paramElement.Element("name")!.Value,
-                                            Type = string.Concat(paramElement.Nodes().Select(n =>
-                                            {
-                                                if (n is XElement e && e.Name != "name")
-                                                    return e.Value;
-                                                else if (n is XText t)
-                                                    return t.Value;
-                                                else
-                                                    return "";
-                                            }))
-                                        }
-                           };
+                           let protoElement = commandElement.Element("proto")!
+                           select new Command(
+                               Name: protoElement.Element("name")!.Value,
+                               ReturnType: GetElementTypeWithoutName(protoElement),
+                               Arguments: (from paramElement in commandElement.Elements("param")
+                                           select new CommandArgument(
+                                               Name: paramElement.Element("name")!.Value,
+                                               Type: GetElementTypeWithoutName(paramElement))).ToList(),
+                               Alias: commandElement.Element("alias")?.Value);
 
             foreach (var command in commands)
-            {
-                spec.Commands.Add(
-                    command.Name,
-                    new Command(
-                        command.Name,
-                        command.RetunType,
-                        command.Params.Select(p => new CommandArgument(p.Type, p.Name)).ToList(),
-                        command.Alias));
-            }
+                spec.Commands.Add(command.Name, command);
 
             var versionNumberRegex = new Regex(@"(\d+)\.(\d+)");
 
             var features = from featureElement in registryElement.Elements("feature")
                            let number = versionNumberRegex.Match(featureElement.Attribute("number")!.Value)
-                           select new
-                           {
-                               Name = featureElement.Attribute("name")!.Value,
-                               Api = featureElement.Attribute("api")!.Value,
-                               MajorVersion = int.Parse(number.Groups[1].ToString()),
-                               MinorVersion = int.Parse(number.Groups[2].ToString()),
-                               RequireBlocks = from requireElement in featureElement.Elements("require")
-                                               select new
-                                               {
-                                                   Profile = requireElement.Attribute("profile")?.Value,
-                                                   Api = requireElement.Attribute("api")?.Value,
-                                                   Types = requireElement.Elements("type").Select(e => e.Attribute("name")!.Value),
-                                                   Enums = requireElement.Elements("enum").Select(e => e.Attribute("name")!.Value),
-                                                   Commands = requireElement.Elements("command").Select(e => e.Attribute("name")!.Value)
-                                               },
-                               RemoveBlocks = from removeElement in featureElement.Elements("remove")
-                                              select new
-                                              {
-                                                  Profile = removeElement.Attribute("profile")?.Value,
-                                                  Api = removeElement.Attribute("api")?.Value,
-                                                  Types = removeElement.Elements("type").Select(e => e.Attribute("name")!.Value),
-                                                  Enums = removeElement.Elements("enum").Select(e => e.Attribute("name")!.Value),
-                                                  Commands = removeElement.Elements("command").Select(e => e.Attribute("name")!.Value)
-                                              }
-                           };
+                           select new Feature(
+                               Name: featureElement.Attribute("name")!.Value,
+                               Api: featureElement.Attribute("api")!.Value,
+                               MajorVersion: int.Parse(number.Groups[1].ToString()),
+                               MinorVersion: int.Parse(number.Groups[2].ToString()),
+                               Requires: (from requireElement in featureElement.Elements("require")
+                                          select GetElementRequireBlock(requireElement)).ToList(),
+                               Removes: (from removeElement in featureElement.Elements("remove")
+                                         select GetElementRemoveBlock(removeElement)).ToList());
 
             foreach (var feature in features)
-            {
-                spec.Features.Add(
-                    feature.Name,
-                    new Feature(
-                        feature.Name,
-                        feature.Api,
-                        feature.MajorVersion,
-                        feature.MinorVersion,
-                        feature.RequireBlocks.Select(r =>
-                        {
-                            return new RequireBlock(
-                                r.Profile,
-                                r.Api,
-                                r.Types.ToHashSet(),
-                                r.Enums.ToHashSet(),
-                                r.Commands.ToHashSet());
-                        }).ToList(),
-                        feature.RemoveBlocks.Select(r =>
-                        {
-                            return new RemoveBlock(
-                                r.Profile,
-                                r.Api,
-                                r.Types.ToHashSet(),
-                                r.Enums.ToHashSet(),
-                                r.Commands.ToHashSet());
-                        }).ToList()));
-            }
+                spec.Features.Add(feature.Name, feature);
 
             var extensions = from extensionsElement in registryElement.Elements("extensions")
                              from extensionElement in extensionsElement.Elements("extension")
-                             select new
-                             {
-                                 Name = extensionElement.Attribute("name")!.Value,
-                                 SupportedApis = extensionElement.Attribute("supported")!.Value,
-                                 RequireBlocks = from requireElement in extensionElement.Elements("require")
-                                                 select new
-                                                 {
-                                                     Profile = requireElement.Attribute("profile")?.Value,
-                                                     Api = requireElement.Attribute("api")?.Value,
-                                                     Types = requireElement.Elements("type").Select(e => e.Attribute("name")!.Value),
-                                                     Enums = requireElement.Elements("enum").Select(e => e.Attribute("name")!.Value),
-                                                     Commands = requireElement.Elements("command").Select(e => e.Attribute("name")!.Value)
-                                                 },
-                                 RemoveBlocks = from removeElement in extensionElement.Elements("remove")
-                                                select new
-                                                {
-                                                    Profile = removeElement.Attribute("profile")?.Value,
-                                                    Api = removeElement.Attribute("api")?.Value,
-                                                    Types = removeElement.Elements("type").Select(e => e.Attribute("name")!.Value),
-                                                    Enums = removeElement.Elements("enum").Select(e => e.Attribute("name")!.Value),
-                                                    Commands = removeElement.Elements("command").Select(e => e.Attribute("name")!.Value)
-                                                }
-                             };
+                             select new Extension(
+                                 Name: extensionElement.Attribute("name")!.Value,
+                                 SupportedApis: new Regex(extensionElement.Attribute("supported")!.Value),
+                                 Requires: (from requireElement in extensionElement.Elements("require")
+                                            select GetElementRequireBlock(requireElement)).ToList(),
+                                 Removes: (from removeElement in extensionElement.Elements("remove")
+                                           select GetElementRemoveBlock(removeElement)).ToList());
 
             foreach (var extension in extensions)
-            {
-                spec.Extensions.Add(
-                    extension.Name,
-                    new Extension(
-                        extension.Name,
-                        new Regex(extension.SupportedApis),
-                        extension.RequireBlocks.Select(r =>
-                        {
-                            return new RequireBlock(
-                                r.Profile,
-                                r.Api,
-                                r.Types.ToHashSet(),
-                                r.Enums.ToHashSet(),
-                                r.Commands.ToHashSet());
-                        }).ToList(),
-                        extension.RemoveBlocks.Select(r =>
-                        {
-                            return new RemoveBlock(
-                                r.Profile,
-                                r.Api,
-                                r.Types.ToHashSet(),
-                                r.Enums.ToHashSet(),
-                                r.Commands.ToHashSet());
-                        }).ToList()));
-            }
+                spec.Extensions.Add(extension.Name, extension);
 
             return spec;
+        }
+
+        static ApiValue CreateApiValue(string? api, string value)
+        {
+            ApiValue apiValue = api switch
+            {
+                null => value,
+                _ => new Dictionary<string, string> { { api!, value } }
+            };
+
+            return apiValue;
+        }
+
+        static string GetElementTypeWithoutName(XElement element)
+        {
+            return string.Concat(element.Nodes().Select(n =>
+            {
+                if (n is XElement e && e.Name != "name")
+                    return e.Value;
+                else if (n is XText t)
+                    return t.Value;
+                else
+                    return "";
+            }));
+        }
+
+        static RequireBlock GetElementRequireBlock(XElement element)
+        {
+            return new RequireBlock(
+                Profile: element.Attribute("profile")?.Value,
+                Api: element.Attribute("api")?.Value,
+                //Types: element.Elements("type").Select(e => e.Attribute("name")!.Value).ToHashSet(),
+                Enums: element.Elements("enum").Select(e => e.Attribute("name")!.Value).ToHashSet(),
+                Commands: element.Elements("command").Select(e => e.Attribute("name")!.Value).ToHashSet());
+        }
+
+        static RemoveBlock GetElementRemoveBlock(XElement element)
+        {
+            return new RemoveBlock(
+                Profile: element.Attribute("profile")?.Value,
+                Api: element.Attribute("api")?.Value,
+                //Types: element.Elements("type").Select(e => e.Attribute("name")!.Value).ToHashSet(),
+                Enums: element.Elements("enum").Select(e => e.Attribute("name")!.Value).ToHashSet(),
+                Commands: element.Elements("command").Select(e => e.Attribute("name")!.Value).ToHashSet());
         }
     }
 }
