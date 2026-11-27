@@ -6,7 +6,7 @@
   <Project Path="Engine/Engine.csproj" Id="688c61f9-3df3-4a4b-a451-5c2354bf8f78">
     <Platform Solution="*|x64" Project="x64" />
   </Project>
-  <Project Path="OpenGLSpecParser/OpenGLSpecParser.csproj">
+  <Project Path="OpenGLSpecParser/OpenGLGenerator.csproj">
     <Platform Solution="*|x64" Project="x64" />
   </Project>
 </Solution>
